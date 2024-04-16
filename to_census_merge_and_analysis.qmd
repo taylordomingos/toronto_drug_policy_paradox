@@ -1,0 +1,712 @@
+---
+title: "to_census_merge_and_analysis"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r setup}
+# Set working directory to cancensus folder in Dropbox
+setwd("~/Dropbox/Vice for Sale RA/cancensus")
+
+#Load necessary packages
+library(pacman)
+p_load(cancensus, sf, geojsonsf, curl, httr, tidyverse, dplyr, Hmisc, zoo)
+
+#Read in SF panel data
+interpolated_data_sf <- st_read("to_census_panel_annual_sf.geojson")
+
+#Read in occurrence data
+occurrence <- read.csv("to_occurrence_counts.csv")
+
+#Read in harm reduction data
+shelterspreadsheet <- read.csv("HarmReduction.csv", stringsAsFactors = F)
+```
+
+## Merge and clean harm reduction data
+
+```{r}
+# Subset the data to only the latitude and longitude as a new object. This code is currently written to include all the rows.
+shelterspreadsheetcoord <- shelterspreadsheet[,3:33]
+
+# Convert list of longitude and latitudes to spatial coordinates
+shelterspreadsheetcoord <- st_as_sf(shelterspreadsheetcoord, coords = c("Longitude", "Latitude"), crs = 4326, agr = "constant")
+
+# Check the conversion
+class(shelterspreadsheetcoord)
+plot(shelterspreadsheetcoord)
+st_crs(shelterspreadsheetcoord)
+
+# Convert the points to the same projection that we will use below for the neighborhoods. Assign the UTM (Universal Tranverse Mercator) zone 16N, which the the proper one for Chicago, with an EPSG code of 32616. (I found this solution through a lot of googling!)
+shelterspreadsheetcoord <- st_transform(shelterspreadsheetcoord, 32617)
+
+# Remove "X" from the beginning of column names
+colnames(shelterspreadsheetcoord)[1:29] <- gsub("^X", "", colnames(shelterspreadsheetcoord)[1:29])
+
+# Assuming 'interpolated_data' is your data frame with geometry
+interpolated_data_sf <- st_as_sf(interpolated_data_sf, coords = c("longitude", "latitude"), crs = 4326)
+
+# Select unique tracts and geometry column
+unique_tracts_sf <- interpolated_data_sf %>%
+  distinct(tract_num, .keep_all = TRUE)
+
+#Replace X's with tract number
+shelterspreadsheetcoord <- st_transform(shelterspreadsheetcoord, crs = st_crs(unique_tracts_sf))
+shelterspreadsheetcoord <- st_join(shelterspreadsheetcoord, unique_tracts_sf["tract_num"])
+shelterspreadsheetcoord <- shelterspreadsheetcoord %>%
+  mutate(across(1:29, ~ ifelse(. != '' & . == 'X', tract_num, .)))
+
+# Drop row 47
+shelterspreadsheetcoord <- shelterspreadsheetcoord[-47, ]
+
+# Drop the geometry column of harm reduction spreadsheet
+shelterspreadsheetcoord <- shelterspreadsheetcoord[, -31]
+
+# Gather the data into a long format
+shelterspreadsheetcoord_long <- shelterspreadsheetcoord %>%
+  pivot_longer(cols = 1:29, names_to = "Column", values_to = "Value") %>%
+  filter(Value != '')  # Remove empty values
+
+# Group by Column and Value, and count occurrences
+counts_per_column <- shelterspreadsheetcoord_long %>%
+  group_by(tract_num, Column) %>%
+  summarise(count = n())
+
+# Convert counts_per_column to a data frame
+counts_per_column <- as.data.frame(counts_per_column)
+
+# Remove the 4th column
+counts_per_column <- counts_per_column[, -4]
+
+# Rename the columns
+counts_per_column <- counts_per_column %>%
+  rename(year = Column, tract_num = tract_num, hr_count = count)
+
+# Convert 'year' column in counts_per_column to character
+counts_per_column <- counts_per_column %>%
+  mutate(year = as.integer(year))
+
+# Merge the data frames
+full_annual_data <- interpolated_data_sf %>%
+  left_join(counts_per_column, by = c("tract_num", "year")) %>%
+  replace(is.na(.), 0)
+
+
+
+
+
+```
+
+## Merge occurrence data
+
+```{r}
+# Remove rows where year is equal to 2021
+full_annual_data <- full_annual_data %>%
+  filter(year != 2021)
+
+# Check if the tract_num contains a decimal point, and add '.00' if it doesn't
+occurrence$tract_num <- ifelse(grepl("\\.", occurrence$tract_num), occurrence$tract_num, sprintf("%.2f", as.numeric(occurrence$tract_num)))
+
+# Find and modify the specific value "5350378.2"
+occurrence$tract_num[occurrence$tract_num == "5350378.2"] <- gsub("2$", "20", occurrence$tract_num[occurrence$tract_num == "5350378.2"])
+
+# Ensure the column is character type
+occurrence$tract_num <- as.character(occurrence$tract_num)
+
+# Merge the occurrence dataset onto your panel census data by 'tract_num' and 'year'
+full_annual_data <- merge(full_annual_data, occurrence, by = c("tract_num", "year"), all.x = TRUE)
+st_write(full_annual_data,"full_annual_toronto_data.geojson")
+
+```
+
+##Read in data again because I am also reading in my individual years with my distance measure calculated so I can join them
+
+```{r setup}
+#Read in SF panel data
+full_annual_data <- st_read("full_annual_toronto_data.geojson")
+
+#Read in each distance file
+distance1992 <- st_read("distance1992table.geojson")
+distance1993 <- st_read("distance1993table.geojson")
+distance1994 <- st_read("distance1994table.geojson")
+distance1995 <- st_read("distance1995table.geojson")
+distance1996 <- st_read("distance1996table.geojson")
+distance1997 <- st_read("distance1997table.geojson")
+distance1998 <- st_read("distance1998table.geojson")
+distance1999 <- st_read("distance1999table.geojson")
+distance2000 <- st_read("distance2000table.geojson")
+distance2001 <- st_read("distance2001table.geojson")
+distance2002 <- st_read("distance2002table.geojson")
+distance2003 <- st_read("distance2003table.geojson")
+distance2004 <- st_read("distance2004table.geojson")
+distance2005 <- st_read("distance2005table.geojson")
+distance2006 <- st_read("distance2006table.geojson")
+distance2007 <- st_read("distance2007table.geojson")
+distance2008 <- st_read("distance2008table.geojson")
+distance2009 <- st_read("distance2009table.geojson")
+distance2010 <- st_read("distance2010table.geojson")
+distance2011 <- st_read("distance2011table.geojson")
+distance2012 <- st_read("distance2012table.geojson")
+distance2013 <- st_read("distance2013table.geojson")
+distance2014 <- st_read("distance2014table.geojson")
+distance2015 <- st_read("distance2015table.geojson")
+distance2016 <- st_read("distance2016table.geojson")
+distance2017 <- st_read("distance2017table.geojson")
+distance2018 <- st_read("distance2018table.geojson")
+distance2019 <- st_read("distance2019table.geojson")
+distance2020 <- st_read("distance2020table.geojson")
+
+# Rename the second column to "tract_num"
+colnames(distance1992)[2] <- "tract_num"
+colnames(distance1993)[2] <- "tract_num"
+colnames(distance1994)[2] <- "tract_num"
+colnames(distance1995)[2] <- "tract_num"
+colnames(distance1996)[2] <- "tract_num"
+colnames(distance1997)[2] <- "tract_num"
+colnames(distance1998)[2] <- "tract_num"
+colnames(distance1999)[2] <- "tract_num"
+colnames(distance2000)[2] <- "tract_num"
+colnames(distance2001)[2] <- "tract_num"
+colnames(distance2002)[2] <- "tract_num"
+colnames(distance2003)[2] <- "tract_num"
+colnames(distance2004)[2] <- "tract_num"
+colnames(distance2005)[2] <- "tract_num"
+colnames(distance2006)[2] <- "tract_num"
+colnames(distance2007)[2] <- "tract_num"
+colnames(distance2008)[2] <- "tract_num"
+colnames(distance2009)[2] <- "tract_num"
+colnames(distance2010)[2] <- "tract_num"
+colnames(distance2011)[2] <- "tract_num"
+colnames(distance2012)[2] <- "tract_num"
+colnames(distance2013)[2] <- "tract_num"
+colnames(distance2014)[2] <- "tract_num"
+colnames(distance2015)[2] <- "tract_num"
+colnames(distance2016)[2] <- "tract_num"
+colnames(distance2017)[2] <- "tract_num"
+colnames(distance2018)[2] <- "tract_num"
+colnames(distance2019)[2] <- "tract_num"
+colnames(distance2020)[2] <- "tract_num"
+
+# Rename the third column to "year"
+colnames(distance1992)[3] <- "year"
+colnames(distance1993)[3] <- "year"
+colnames(distance1994)[3] <- "year"
+colnames(distance1995)[3] <- "year"
+colnames(distance1996)[3] <- "year"
+colnames(distance1997)[3] <- "year"
+colnames(distance1998)[3] <- "year"
+colnames(distance1999)[3] <- "year"
+colnames(distance2000)[3] <- "year"
+colnames(distance2001)[3] <- "year"
+colnames(distance2002)[3] <- "year"
+colnames(distance2003)[3] <- "year"
+colnames(distance2004)[3] <- "year"
+colnames(distance2005)[3] <- "year"
+colnames(distance2006)[3] <- "year"
+colnames(distance2007)[3] <- "year"
+colnames(distance2008)[3] <- "year"
+colnames(distance2009)[3] <- "year"
+colnames(distance2010)[3] <- "year"
+colnames(distance2011)[3] <- "year"
+colnames(distance2012)[3] <- "year"
+colnames(distance2013)[3] <- "year"
+colnames(distance2014)[3] <- "year"
+colnames(distance2015)[3] <- "year"
+colnames(distance2016)[3] <- "year"
+colnames(distance2017)[3] <- "year"
+colnames(distance2018)[3] <- "year"
+colnames(distance2019)[3] <- "year"
+colnames(distance2020)[3] <- "year"
+
+# Rename column 109 to "distance"
+colnames(distance1992)[109] <- "distance"
+colnames(distance1993)[109] <- "distance"
+colnames(distance1994)[109] <- "distance"
+colnames(distance1995)[109] <- "distance"
+colnames(distance1996)[109] <- "distance"
+colnames(distance1997)[109] <- "distance"
+colnames(distance1998)[109] <- "distance"
+colnames(distance1999)[109] <- "distance"
+colnames(distance2000)[109] <- "distance"
+colnames(distance2001)[109] <- "distance"
+colnames(distance2002)[109] <- "distance"
+colnames(distance2003)[109] <- "distance"
+colnames(distance2004)[109] <- "distance"
+colnames(distance2005)[109] <- "distance"
+colnames(distance2006)[109] <- "distance"
+colnames(distance2007)[109] <- "distance"
+colnames(distance2008)[109] <- "distance"
+colnames(distance2009)[109] <- "distance"
+colnames(distance2010)[109] <- "distance"
+colnames(distance2011)[109] <- "distance"
+colnames(distance2012)[109] <- "distance"
+colnames(distance2013)[109] <- "distance"
+colnames(distance2014)[109] <- "distance"
+colnames(distance2015)[109] <- "distance"
+colnames(distance2016)[109] <- "distance"
+colnames(distance2017)[109] <- "distance"
+colnames(distance2018)[109] <- "distance"
+colnames(distance2019)[109] <- "distance"
+colnames(distance2020)[109] <- "distance"
+
+library(sf)
+
+# List of your spatial data frames
+distance_sf_data_frames <- list(
+  distance1992, distance1993, distance1994, distance1995, distance1996,
+  distance1997, distance1998, distance1999, distance2000, distance2001,
+  distance2002, distance2003, distance2004, distance2005, distance2006,
+  distance2007, distance2008, distance2009, distance2010, distance2011,
+  distance2012, distance2013, distance2014, distance2015, distance2016,
+  distance2017, distance2018, distance2019, distance2020
+)
+
+# Remove column 110 and convert to data frames
+distance_df_data_frames <- lapply(distance_sf_data_frames, function(df) {
+  df <- df[, -110]
+  as.data.frame(df)
+})
+
+# Row bind specific columns from the data frames
+combined_data <- do.call(rbind, lapply(distance_df_data_frames, function(df) df[, c("tract_num", "year", "distance")]))
+
+# Perform the join with full_annual_data based on "tract_num" and "year"
+full_annual_data <- full_annual_data %>%
+  left_join(combined_data, by = c("tract_num", "year"))
+
+#Remove extra files
+rm(combined_data)
+rm(df)
+rm(distance_data_frames)
+rm(distance_df_data_frames)
+rm(distance_sf_data_frames)
+rm(distance1992)
+rm(distance1993)
+rm(distance1994)
+rm(distance1995)
+rm(distance1996)
+rm(distance1997)
+rm(distance1998)
+rm(distance1999)
+rm(distance2000)
+rm(distance2001)
+rm(distance2002)
+rm(distance2003)
+rm(distance2004)
+rm(distance2005)
+rm(distance2006)
+rm(distance2007)
+rm(distance2008)
+rm(distance2009)
+rm(distance2010)
+rm(distance2011)
+rm(distance2012)
+rm(distance2013)
+rm(distance2014)
+rm(distance2015)
+rm(distance2016)
+rm(distance2017)
+rm(distance2018)
+rm(distance2019)
+rm(distance2020)
+```
+
+## Index Making
+
+```{r}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#### Residential Instability Index ####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#I am going to try creating a residential instability index using the movers 5 year census variable and the renters variable.
+#These are the packages you need for it. 
+install.packages("VIM")
+install.packages("corrr")
+library(corrr)
+library(VIM)
+library(dplyr)
+library(tidyverse)
+
+#I need to standardize these two variables (create zscores)
+standardized <- full_annual_data %>%
+  mutate_at(~(scale(.) %>% as.vector(.)), .vars = vars(c(per_renters,per_mvd5yr)))
+
+#Creating the index here
+standardized <- standardized %>%
+  mutate(RIInd = (per_mvd5yr+per_renters)/2)
+
+#Residential Instability Index using principal components analysis. This is a different method to create an index that should be identical or nearly identical to the first method
+RIindPR <- prcomp(~per_mvd5yr+per_renters, center=T, scale=T, data=full_annual_data, na.action = na.exclude)
+class(RIindPR)
+summary(RIindPR)
+glimpse(RIindPR)
+
+full_annual_data <- full_annual_data %>%
+  mutate(RIindPR = RIindPR$x[,1])
+
+#Check correlation between this PCA index and the ones created above (the correlations are 1 which is good)
+cor.test(standardized$RIInd, full_annual_data$RIindPR)
+cor.test(standardized$RIInd, full_annual_data$RIindPR)
+full_annual_data$RIindPR <- full_annual_data$RIindPR * -1
+
+#I need to standardize these two variables (create zscores)
+standardizedSED <- full_annual_data %>%
+  mutate_at(~(scale(.) %>% as.vector(.)), .vars = vars(c(per_govttransfer,lowincomeprivhouseholdpercent,per_singlemother,per_unemployed,per_nodegree,per_bachplus)))
+
+#Creating the index here
+standardizedSED <- standardizedSED %>%
+  mutate(SEDindex = (per_govttransfer+lowincomeprivhouseholdpercent+per_singlemother+per_unemployed+per_nodegree+per_bachplus)/2)
+
+#Residential Instability Index using principal components analysis. This is a different method to create an index that should be identical or nearly identical to the first method
+SEDindexPR <- prcomp(~per_govttransfer+lowincomeprivhouseholdpercent+per_singlemother+per_unemployed+per_nodegree+per_bachplus, center=T, scale=T, data=full_annual_data, na.action = na.exclude)
+class(SEDindexPR)
+summary(SEDindexPR)
+glimpse(SEDindexPR)
+
+full_annual_data <- full_annual_data %>%
+  mutate(SEDindexPR = SEDindexPR$x[,1])
+
+
+#Check correlation between this PCA index and the ones created above (the correlations are 1 which is good)
+full_annual_data$SEDindexPR <- full_annual_data$SEDindexPR * -1
+
+```
+
+### Models
+
+```{r}
+
+#Create BINARY hr centre variable
+full_annual_data$hr_presence <- ifelse(full_annual_data$hr_count > 0, 1, 0)
+
+# Install and load the required package
+install.packages("fixest")
+library(fixest)
+
+# Fit negative binomial regression with fixed effects
+fe.negbin_poss <- fenegbin(drugpossnocann ~ distance + hr_presence + SEDindexPR + RIindPR + per_immigrants + population  | year, data = full_annual_data)
+
+fe.negbin_deal <- fenegbin(drugdealnocann ~ distance + hr_presence + SEDindexPR + RIindPR + per_immigrants + population  | year, data = full_annual_data)
+
+# Extracting the coefficients
+exp(coef(fe.negbin_poss))
+exp(coef(fe.negbin_deal))
+
+# Display the summary of the model
+summary(fe.negbin_poss)
+summary(fe.negbin_deal)
+
+# Differences in Differences Estimation
+# first lets create an opening_year variable. So this should be the year when hr_presence for that specific tract_num switched from 0 to 1
+library(dplyr)
+
+full_annual_data <- full_annual_data %>%
+  arrange(tract_num, year) %>%
+  group_by(tract_num) %>%
+  mutate(opening_year = min(as.numeric(as.character(year[hr_presence == 1])))) %>%
+  ungroup()
+
+full_annual_data <- full_annual_data %>%
+  mutate(opening_year = ifelse(hr_presence == 0, -9999, opening_year))
+
+# Differences in Differences Estimation with staggered start dates
+full_annual_data <- full_annual_data %>%
+  mutate(
+    year = as.numeric(as.character(year)),  # Convert 'year' to numeric
+    opening_year = as.numeric(as.character(opening_year)),  # Convert 'opening_year' to numeric
+    did = ifelse((year >= opening_year) & (year < opening_year + 2), 1, 0)  # Create adjusted 'did' variable
+  )
+
+# Model for drug possession arrests
+fe.negbin_poss_DiD <- fenegbin(drugpossnocann ~ did + distance + SEDindexPR + RIindPR + per_immigrants + population | year, data = full_annual_data)
+summary(fe.negbin_poss_DiD)
+
+# Model for drug sales arrests
+fe.negbin_deal_DiD <- fenegbin(drugdealnocann ~ did + distance + SEDindexPR + RIindPR + per_immigrants + population | year, data = full_annual_data)
+summary(fe.negbin_deal_DiD)
+
+# Exponentiate coefficients for drug possession arrests model
+exp_coeff_poss <- exp(coef(fe.negbin_poss_DiD))
+exp(coef(fe.negbin_poss_DiD)) # Show exponentiated coefficients
+
+# Exponentiate coefficients for drug sales arrests model
+exp_coeff_deal <- exp(coef(fe.negbin_deal_DiD))
+exp(coef(fe.negbin_deal_DiD))
+
+# Install and load required packages
+install.packages("dplyr")
+library(dplyr)
+
+# Calculate descriptive statistics for each year
+descriptive_stats_by_year <- full_annual_data %>%
+  group_by(year) %>%
+  reframe(
+    Mean_Dealing_Arrests = mean(drugdealnocann),
+    SD_Dealing_Arrests = sd(drugdealnocann),
+    Range_Dealing_Arrests = range(drugdealnocann),
+    Mean_Possession_Arrests = mean(drugpossnocann),
+    SD_Possession_Arrests = sd(drugpossnocann),
+    Range_Possession_Arrests = range(drugpossnocann),
+    Mean_HR_Centres = mean(hr_presence),
+    SD_HR_Centres = sd(hr_presence),
+    Range_HR_Centres = range(hr_presence),
+    Mean_SED_Index = mean(SEDindexPR),
+    SD_SED_Index = sd(SEDindexPR),
+    Range_SED_Index = range(SEDindexPR),
+    Mean_Percent_Unemployed = mean(per_unemployed),
+    SD_Percent_Unemployed = sd(per_unemployed),
+    Range_Percent_Unemployed = range(per_unemployed),
+    Mean_Percent_Gov_Transfers = mean(per_govttransfer),
+    SD_Percent_Gov_Transfers = sd(per_govttransfer),
+    Range_Percent_Gov_Transfers = range(per_govttransfer),
+    Mean_Percent_Low_Income = mean(lowincomeprivhouseholdpercent),
+    SD_Percent_Low_Income = sd(lowincomeprivhouseholdpercent),
+    Range_Percent_Low_Income = range(lowincomeprivhouseholdpercent),
+    Mean_Percent_Single_Mothers = mean(per_singlemother),
+    SD_Percent_Single_Mothers = sd(per_singlemother),
+    Range_Percent_Single_Mothers = range(per_singlemother),
+    Mean_Percent_No_Highschool = mean(per_nodegree),
+    SD_Percent_No_Highschool = sd(per_nodegree),
+    Range_Percent_No_Highschool = range(per_nodegree),
+    Mean_Percent_Bachelor_Degree = mean(per_bachplus),
+    SD_Percent_Bachelor_Degree = sd(per_bachplus),
+    Range_Percent_Bachelor_Degree = range(per_bachplus),
+    Mean_Residential_Instability_Index = mean(RIindPR),
+    SD_Residential_Instability_Index = sd(RIindPR),
+    Range_Residential_Instability_Index = range(RIindPR),
+    Mean_Percent_Movers_5_Year = mean(per_mvd5yr),
+    SD_Percent_Movers_5_Year = sd(per_mvd5yr),
+    Range_Percent_Movers_5_Year = range(per_mvd5yr),
+    Mean_Percent_Renters = mean(per_renters),
+    SD_Percent_Renters = sd(per_renters),
+    Range_Percent_Renters = range(per_renters),
+    Mean_Percent_Immigrant_Population = mean(per_immigrants),
+    SD_Percent_Immigrant_Population = sd(per_immigrants),
+    Range_Percent_Immigrant_Population = range(per_immigrants),
+    Mean_Distance_to_HR_Centre = mean(distance),
+    SD_Distance_to_HR_Centre = sd(distance),
+    Range_Distance_to_HR_Centre = range(distance),
+    Mean_HR_Centre = mean(hr_presence),
+    SD_HR_Centre = sd(hr_presence)
+  )
+
+# Print the summary table
+print(descriptive_stats_by_year)
+
+
+stats_2020 <- full_annual_data %>%
+  filter(year == 2020) %>%
+  summarise(
+    Mean_Dealing_Arrests = mean(drugdealnocann),
+    SD_Dealing_Arrests = sd(drugdealnocann),
+    Range_Dealing_Arrests = range(drugdealnocann),
+       Mean_Distance_to_HR_Centre = mean(distance),
+    SD_Distance_to_HR_Centre = sd(distance),
+    Range_Distance_to_HR_Centre = range(distance))
+
+#Full descriptive stats
+descriptive_stats <- full_annual_data_df %>%
+  summarise(
+    Mean_Dealing_Arrests = mean(drugdealnocann),
+    SD_Dealing_Arrests = sd(drugdealnocann),
+    Range_Dealing_Arrests = range(drugdealnocann),
+    Mean_Possession_Arrests = mean(drugpossnocann),
+    SD_Possession_Arrests = sd(drugpossnocann),
+    Range_Possession_Arrests = range(drugpossnocann),
+    Mean_HR_Centres = mean(hr_presence),
+    SD_HR_Centres = sd(hr_presence),
+    Range_HR_Centres = range(hr_presence),
+    Mean_SED_Index = mean(SEDindexPR),
+    SD_SED_Index = sd(SEDindexPR),
+    Range_SED_Index = range(SEDindexPR),
+    Mean_Percent_Unemployed = mean(per_unemployed),
+    SD_Percent_Unemployed = sd(per_unemployed),
+    Range_Percent_Unemployed = range(per_unemployed),
+    Mean_Percent_Gov_Transfers = mean(per_govttransfer),
+    SD_Percent_Gov_Transfers = sd(per_govttransfer),
+    Range_Percent_Gov_Transfers = range(per_govttransfer),
+    Mean_Percent_Low_Income = mean(lowincomeprivhouseholdpercent),
+    SD_Percent_Low_Income = sd(lowincomeprivhouseholdpercent),
+    Range_Percent_Low_Income = range(lowincomeprivhouseholdpercent),
+    Mean_Percent_Single_Mothers = mean(per_singlemother),
+    SD_Percent_Single_Mothers = sd(per_singlemother),
+    Range_Percent_Single_Mothers = range(per_singlemother),
+    Mean_Percent_No_Highschool = mean(per_nodegree),
+    SD_Percent_No_Highschool = sd(per_nodegree),
+    Range_Percent_No_Highschool = range(per_nodegree),
+    Mean_Percent_Bachelor_Degree = mean(per_bachplus),
+    SD_Percent_Bachelor_Degree = sd(per_bachplus),
+    Range_Percent_Bachelor_Degree = range(per_bachplus),
+    Mean_Residential_Instability_Index = mean(RIindPR),
+    SD_Residential_Instability_Index = sd(RIindPR),
+    Range_Residential_Instability_Index = range(RIindPR),
+    Mean_Percent_Movers_5_Year = mean(per_mvd5yr),
+    SD_Percent_Movers_5_Year = sd(per_mvd5yr),
+    Range_Percent_Movers_5_Year = range(per_mvd5yr),
+    Mean_Percent_Renters = mean(per_renters),
+    SD_Percent_Renters = sd(per_renters),
+    Range_Percent_Renters = range(per_renters),
+    Mean_Percent_Immigrant_Population = mean(per_immigrants),
+    SD_Percent_Immigrant_Population = sd(per_immigrants),
+    Range_Percent_Immigrant_Population = range(per_immigrants),
+    Mean_Distance_to_HR_Centre = mean(distance),
+    SD_Distance_to_HR_Centre = sd(distance),
+    Range_Distance_to_HR_Centre = range(distance),
+    Mean_HR_Centre = mean(hr_presence),
+    SD_HR_Centre = sd(hr_presence)
+  )
+
+
+#Morans I
+st_crs(full_annual_data)
+nb <- poly2nb(full_annual_data, queen=TRUE)
+nb
+plot(nb, st_geometry(full_annual_data), col='red')
+lw <- nb2listw(nb, style="W", zero.policy=TRUE)
+class(lw)
+str(lw)
+lw$weights[1]
+lw$weights[[1]]
+dealing.lag <-  lag.listw(lw, full_annual_data$drugdealnocann, zero.policy = TRUE)
+dealing.lag
+M1 <- lm(dealing.lag ~ full_annual_data$drugdealnocann)
+plot(dealing.lag ~ full_annual_data$drugdealnocann, pch = 20, asp=1, las=1)
+abline(M1, col = "red")
+coef(M1)[2]
+options(scipen = 999)
+moran.test(full_annual_data$drugdealnocann,lw,alternative="greater", na.action = na.omit, zero.policy=TRUE)
+
+# Filter data for the years I want
+data_1992 <- full_annual_data %>%
+  filter(year == 1992)
+
+data_2002 <- full_annual_data %>%
+  filter(year == 2002)
+
+data_2012 <- full_annual_data %>%
+  filter(year == 2012)
+
+data_2020 <- full_annual_data %>%
+  filter(year == 2020)
+
+#Morans I
+st_crs(full_annual_data)
+nb <- poly2nb(full_annual_data, queen=TRUE)
+nb
+plot(nb, st_geometry(full_annual_data), col='red')
+lw <- nb2listw(nb, style="W", zero.policy=TRUE)
+class(lw)
+str(lw)
+lw$weights[1]
+lw$weights[[1]]
+hr_presence.lag <-  lag.listw(lw, full_annual_data$hr_count, zero.policy = TRUE)
+hr_presence.lag
+M1 <- lm(hr_presence.lag ~ full_annual_data$hr_count)
+plot(hr_presence.lag ~ full_annual_data$hr_count, pch = 20, asp=1, las=1)
+abline(M1, col = "red")
+coef(M1)[2]
+options(scipen = 999)
+moran.test(full_annual_data$hr_count,lw,alternative="greater", na.action = na.omit, zero.policy=TRUE)
+
+#Morans I
+st_crs(data_2020)
+nb <- poly2nb(data_2020, queen=TRUE)
+nb
+plot(nb, st_geometry(data_2020), col='red')
+lw <- nb2listw(nb, style="W", zero.policy=TRUE)
+class(lw)
+str(lw)
+lw$weights[1]
+lw$weights[[1]]
+SEDindexPR.lag <-  lag.listw(lw, data_2020$SEDindexPR, zero.policy = TRUE)
+SEDindexPR.lag
+M1 <- lm(SEDindexPR.lag ~ data_2020$SEDindexPR)
+plot(SEDindexPR.lag ~ data_2020$SEDindexPR, pch = 20, asp=1, las=1)
+abline(M1, col = "red")
+coef(M1)[2]
+options(scipen = 999)
+moran.test(data_2020$SEDindexPR,lw,alternative="greater", na.action = na.omit, zero.policy=TRUE)
+
+#Morans I
+st_crs(data_2020)
+nb <- poly2nb(data_2020, queen=TRUE)
+nb
+plot(nb, st_geometry(data_2020), col='red')
+lw <- nb2listw(nb, style="W", zero.policy=TRUE)
+class(lw)
+str(lw)
+lw$weights[1]
+lw$weights[[1]]
+RIindPR.lag <-  lag.listw(lw, data_2020$RIindPR, zero.policy = TRUE)
+RIindPR.lag
+M1 <- lm(RIindPR.lag ~ data_2020$RIindPR)
+plot(RIindPR.lag ~ data_2020$RIindPR, pch = 20, asp=1, las=1)
+abline(M1, col = "red")
+coef(M1)[2]
+options(scipen = 999)
+moran.test(data_2020$RIindPR,lw,alternative="greater", na.action = na.omit, zero.policy=TRUE)
+
+#Morans I
+st_crs(data_2020)
+nb <- poly2nb(data_2020, queen=TRUE)
+nb
+plot(nb, st_geometry(data_2020), col='red')
+lw <- nb2listw(nb, style="W", zero.policy=TRUE)
+class(lw)
+str(lw)
+lw$weights[1]
+lw$weights[[1]]
+per_immigrants.lag <-  lag.listw(lw, data_2020$per_immigrants, zero.policy = TRUE)
+per_immigrants.lag
+M1 <- lm(per_immigrants.lag ~ data_2020$per_immigrants)
+plot(per_immigrants.lag ~ data_2020$per_immigrants, pch = 20, asp=1, las=1)
+abline(M1, col = "red")
+coef(M1)[2]
+options(scipen = 999)
+moran.test(data_2020$per_immigrants,lw,alternative="greater", na.action = na.omit, zero.policy=TRUE)
+
+cor.test(full_annual_data$per_immigrants, full_annual_data$per_visminority)
+
+
+#Isolate Moss Park 
+selected_tracts <- c(5350035.00, 5350034.01, 5350034.02, 5350014.00, 5350015.00, 5350016.00)
+
+# Extract the integer part of selected_tracts
+selected_tracts_integer <- as.integer(selected_tracts)
+
+# Calculate the average population for the specified tracts from 1992 to 1999
+average_population_1992_to_1999 <- full_annual_data %>%
+  filter(year >= 1992 & year <= 2020 & as.integer(tract_num) %in% selected_tracts_integer) %>%
+  group_by(tract_num) %>%
+  summarise(average_population = mean(per_unemployed))
+
+# Print the result
+print(average_population_1992_to_1999)
+
+
+#Isolate Bridle Path 
+selected_tracts <- c(5350266, 5350264, 5350265)
+
+# Extract the integer part of selected_tracts
+selected_tracts_integer <- as.integer(selected_tracts)
+
+# Calculate the average population for the specified tracts from 1992 to 1999
+average_population_1992_to_1999 <- full_annual_data %>%
+  filter(year >= 1992 & year <= 2020 & as.integer(tract_num) %in% selected_tracts_integer) %>%
+  group_by(tract_num) %>%
+  summarise(average_population = mean(lowincomeprivhouseholdpercent))
+
+# Print the result
+print(average_population_1992_to_1999)
+
+
+full_annual_data$year <- as.numeric(full_annual_data$year)
+
+# Use aggregate to get the sum of counts for each year
+sum_by_year <- aggregate(prostitution ~ year, data = full_annual_data, sum)
+
+# Print or view the resulting data frame
+print(sum_by_year)
+```
