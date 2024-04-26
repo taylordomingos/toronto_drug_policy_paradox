@@ -3,12 +3,6 @@ title: "to_census_areal_interpolation"
 format: html
 editor: visual
 ---
-# TODO: Check linear interpolations for consistency (P2 - Medium Priority, Deadline: 05/30/2024)
-      # This TODO refers to the 'Linear Interpolation' section below (about line 2690)
-
-# TODO: Condense and write a loop for making my panel dataset below (P1 - High Priority, Deadline: 04/30/2024)
-      # This TODO refers to the 'Creating a Panel Dataset' (about line 1785)
-
 
 ## Task Description
 
@@ -531,10 +525,9 @@ vars21<-c("v_CA21_1",
 
 ## 1996 Get Census
 
-#1996 is before Toronto's amalgamation. This means that I need to load the Toronto region plus the regions for the burroughs. There are 5 additional burroughs each with different region numbers. Here is a list of all of the region codes:
+1996 is before Toronto's amalgamation. This means that I need to load the Toronto region plus the regions for the burroughs. There are 5 additional burroughs each with different region numbers. Here is a list of all of the region codes:
 
-3520004 Toronto 3520001 Scarborough 3520008 North York\
-3520014 York 3520006 East York 3520019 Etobicoke
+3520004 Toronto, 3520001 Scarborough, 3520008 North York, 3520014 York, 3520006 East York, 3520019 Etobicoke
 
 ```{r}
 #This is pulling in the Toronto region based on the region code listed above.
@@ -671,7 +664,7 @@ to_census96$tract_num_96 <- round(as.numeric(to_census96$geouid_96), 2)
 
 
 # Save the object to my raw_data folder
-st_write(to_census96, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census1996.geojson")
+#st_write(to_census96, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census1996.geojson")
 
 #Missing Values: 8 total tracts: 5350205 5350376 5350003 5350006 5350009 5350016 5350020 5350061.
 ```
@@ -745,7 +738,7 @@ names(to_census01)
 to_census01$tract_num_01 <- round(as.numeric(to_census01$geouid_01), 2)
 
 # Save the object to my working directory
-st_write(to_census01, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2001.geojson")
+#st_write(to_census01, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2001.geojson")
 
 # Filter rows with NAs in columns 1-82. These are missing information: 5350006.00 5350009.00 5350016.00 5350032.00 5350205.00 5350376.00 5350003.00
 na_rows <- to_census01[rowSums(is.na(to_census01[, 1:82])) > 0, ]
@@ -776,7 +769,7 @@ names(to_census06)
 to_census06$tract_num_06 <- round(as.numeric(to_census06$geouid_06), 2)
 
 # Save the object to my working directory
-st_write(to_census06, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2006.geojson")
+#st_write(to_census06, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2006.geojson")
 
 # Filter rows with NAs in columns 1-82. These are missing information: 5350003.00 5350006.00 5350009.00 5350033.00 5350061.00 5350205.00 5350376.06
 na_rows <- to_census06[rowSums(is.na(to_census06[, 1:82])) > 0, ]
@@ -808,7 +801,7 @@ names(to_census11)
 to_census11$tract_num_11 <- round(as.numeric(to_census11$geouid_11), 2)
 
 # Save the object to my working directory
-st_write(to_census11, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2011.geojson")
+#st_write(to_census11, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2011.geojson")
 
 # Filter rows with NAs in columns 1-82. These are missing information: 5350003.00 5350006.00 5350009.00 5350014.00 5350100.00 5350205.00 5350296.00
 na_rows <- to_census11[rowSums(is.na(to_census11[, 1:82])) > 0, ]
@@ -839,7 +832,7 @@ names(to_census16)
 to_census16$tract_num_16 <- round(as.numeric(to_census16$geouid_16), 2)
 
 # Save the object to my working directory
-st_write(to_census16, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2016.geojson")
+#st_write(to_census16, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2016.geojson")
 
 # Filter rows with NAs in columns 1-82. These are missing information: 5350006.00 5350205.00 5350296.00
 na_rows <- to_census16[rowSums(is.na(to_census16[, 1:82])) > 0, ]
@@ -870,14 +863,14 @@ names(to_census21)
 to_census21$tract_num_21 <- as.numeric(to_census21$geouid_21)
 
 #Save the object to my working directory
-st_write(to_census21, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2021.geojson")
+#st_write(to_census21, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_census2021.geojson")
 
 #Filter rows with NAs in columns 1-82. These are missing information: 5350006.00 5350009.00 5350205.00 5350194.03 5350341.03
 na_rows <- to_census21[rowSums(is.na(to_census21[, 1:82])) > 0, ]
 rm(na_rows)
 ```
 
-## Download Crosswalk files
+##Crosswalk files
 
 ```{r}
 #Here I am reading in all of the crosswalk files
@@ -925,23 +918,20 @@ These are tracts that stayed the same from the source year (i.e., 1996, 2001, 20
 ```{r}
 table(cw96_21$f) #368
 
-# Create a dataframe of tracts that don't change
+# Create a dataframe of tracts that don't change my (flag=1)
 cw96_21_nochange <- cw96_21[cw96_21$f==1,]
-view(cw96_21_nochange)
+
 # Subset the 1996 TO Census to only the tracts that don't change
 to_census_nochange_96 <- merge(to_census96, cw96_21_nochange, by.x = "geouid_96", by.y = "ctuid_s")
-view(to_census96)
 
 # Remove the geometry column because it will be identical to the 2021 file
 st_geometry(to_census_nochange_96) <- NULL
 
 # Merge to subset of 1996 with the 2021 file
 to_census_nochange1 <- merge(to_census21, to_census_nochange_96, by.x = "geouid_21", by.y = "ctuid_t")
-view(to_census_nochange1)
 
 #View the rows with NA's. So basically 5350003.00, 5350006.00, and 5350009.00 need to be dropped because they are NA across years. 5350020.00 in this case with NA's had populations of 0 because at the time it was only a Gardiner Expressway highway section. Info available here, but demolition began around 1999:https://www.toronto.ca/explore-enjoy/history-art-culture/online-exhibits/web-exhibits/web-exhibits-architecture-infrastructure/the-gardiner-expressway-east-comes-down/.
 na_rows <- to_census_nochange1[rowSums(is.na(to_census_nochange1)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_nochange1)
@@ -952,7 +942,7 @@ names(to_census_nochange1)
 # Clean up subset files
 rm(cw96_21_nochange)
 rm(to_census_nochange_96)
-
+rm(na_rows)
 ```
 
 ### 2001 to 2021 No Change
@@ -965,7 +955,6 @@ cw01_21_nochange <- cw01_21[cw01_21$f==1,]
 
 # Subset the 2001 TO Census to only the tracts that don't change
 to_census_nochange_01 <- merge(to_census01, cw01_21_nochange, by.x = "geouid_01", by.y = "ctuid_s")
-view(to_census_nochange_01)
 
 # Remove the geometry column because it will be identical to the 2021 file
 st_geometry(to_census_nochange_01) <- NULL
@@ -977,11 +966,8 @@ to_census_nochange2 <- merge(to_census21, to_census_nochange_01, by.x = "geouid_
 
 #Tract 5350376.06. This tract basically had no population in 2001 or 2006 because it underwent major construction of an underpass transit system. This tract was mostly commercial anyways, but I do think they ended up displacing some people: https://www.toronto.ca/legdocs/2002/agendas/council/cc020730/wks9rpt/cl009.pdf. I think it's fine to drop this tract too. 
 
-#Tract 5350016.00. It's not entirely clear why this is missing the census data but I think this one could be interpolated based on other years because it does have a relatively large population. It is also the George Brown college campus so maybe that's why. Same with tract 5350032.00 there is a relatively stable population across the years and nothing significant is happening for the data to be missing. 
-
-#Tract 5350033.00. This includes Moss Park and I am not sure why it's missing some info but it has some so I'll itnerpolate.
+#Tract 5350016.00. It's not entirely clear why this is missing the census data but I think this one could be interpolated based on other years because it does have a relatively large population. It is also the George Brown college campus so maybe that's why. Same with tract 5350032.00 there is a relatively stable population across the years and nothing significant is happening for the data to be missing. Tract 5350033.00. This includes Moss Park and I am not sure why it's missing some info but it has some so I'll itnerpolate.
 na_rows <- to_census_nochange2[rowSums(is.na(to_census_nochange2)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_nochange2)
@@ -992,6 +978,7 @@ names(to_census_nochange2)
 # Clean up subset files
 rm(cw01_21_nochange)
 rm(to_census_nochange_01)
+rm(na_rows)
 
 ```
 
@@ -1014,12 +1001,10 @@ to_census_nochange3 <- merge(to_census21, to_census_nochange_06, by.x = "geouid_
 
 #View tracts with missing data. 5350003.00, 5350009.00, and 5350205.00 I am dropping. I think I will interpolate the data for 5350033.00 since nothing significant is going on there during this time period and it's only missing about half the variables information.
 
-#Tract 5350061. I am nost sure why this tract was missing from the 2006 census, but it's missing from other websites too: https://www.citypopulation.de/en/canada/metrotoronto/535006100__ct_0061/. It can be interpolated since the population is relatively stable over time and we have the population number for 2006 only. 
+#Tract 5350061. I am not sure why this tract was missing from the 2006 census, but it's missing from other websites too: https://www.citypopulation.de/en/canada/metrotoronto/535006100__ct_0061/. It can be interpolated since the population is relatively stable over time and we have the population number for 2006 only. 
 
 #Tract 5350376.06. This tract basically had no population in 2001 or 2006 because it underwent major construction of an underpass transit system. This tract was mostly commercial anyways, but I do think they ended up displacing some people: https://www.toronto.ca/legdocs/2002/agendas/council/cc020730/wks9rpt/cl009.pdf. I think it's fine to drop this tract too. 
-
 na_rows <- to_census_nochange3[rowSums(is.na(to_census_nochange3)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_nochange3)
@@ -1030,6 +1015,7 @@ names(to_census_nochange3)
 # Clean up subset files
 rm(cw06_21_nochange)
 rm(to_census_nochange_06)
+rm(na_rows)
 
 ```
 
@@ -1050,13 +1036,12 @@ st_geometry(to_census_nochange_11) <- NULL
 # Merge to subset of 2011 with the 2021 file
 to_census_nochange4 <- merge(to_census21, to_census_nochange_11, by.x = "geouid_21", by.y = "ctuid_t")
 
-#2011 was the year where the census was weird. "In 2011, it consisted of a mandatory short form census questionnaire and an inaugural National Household Survey (NHS), a voluntary survey which replaced the mandatory long form census questionnaire" (https://en.wikipedia.org/wiki/2011_Canadian_census#:~:text=In%202011%2C%20it%20consisted%20of,the%20focus%20of%20much%20controversy.). It's still useable but that explains some of these missing already. 
+#2011 was the year where the census was weird. "In 2011, it consisted of a mandatory short form census questionnaire and an inaugural National Household Survey (NHS), a voluntary survey which replaced the mandatory long form census questionnaire" (https://en.wikipedia.org/wiki/2011_Canadian_census#:~:text=In%202011%2C%20it%20consisted%20of,the%20focus%20of%20much%20controversy.). It's still usable but that explains some of these missing. 
 
 #Tract 5350003.00, 5350006.00, 5350009.00 and 5350205.00 I am dropping.
 
 #I think all of the rest of the tracts I will interpolate because the population values look stable and I have those. 
 na_rows <- to_census_nochange4[rowSums(is.na(to_census_nochange4)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_nochange4)
@@ -1067,6 +1052,7 @@ names(to_census_nochange4)
 # Clean up subset files
 rm(cw11_21_nochange)
 rm(to_census_nochange_11)
+rm(na_rows)
 
 ```
 
@@ -1093,7 +1079,6 @@ to_census_nochange5 <- merge(to_census21, to_census_nochange_16, by.x = "geouid_
 
 # Tract 5350194.03 needs to be interpolated since the population is stable and nothing is out of the ordinary. Tract 5350341.03 is mostly a park but population is mostly stable. Drops slightly in 2016. I'll interpolate later.
 na_rows <- to_census_nochange5[rowSums(is.na(to_census_nochange5)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_nochange5)
@@ -1104,6 +1089,7 @@ names(to_census_nochange5)
 # Clean up subset files
 rm(cw16_21_nochange)
 rm(to_census_nochange_16)
+rm(na_rows)
 
 ```
 
@@ -1125,9 +1111,9 @@ to_census_split_96 <- merge(to_census96, cw96_21_split, by.x = "geouid_96", by.y
 # Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_split_96) <- NULL
 
-# Assign weights to 1996 variables -- WARNING -- need to check if there are any missing values here otherwise you can't apply the weights
+# Assign weights to 1996 variables
 
-# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) 
+# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are). We want to keep the source tract's percents and median/average variables in tact in the new tracts.
 names(to_census_split_96)
 summary(to_census_split_96)
 
@@ -1151,11 +1137,9 @@ to_census_split_96[, variables_to_weight] <- to_census_split_96[, variables_to_w
 
 # Merge 1996 and 2021. Tract 5350008.01 had zero population until after 2006. The neighborhood 'Liberty Village' underwent a ton of chanegs and was mostly empty land and railroads for a while https://storymaps.arcgis.com/stories/f5176640c41646c09af3d1b699d37ab4. Here are some of the projects that caused the spike in population: https://www.skyscrapercity.com/threads/growth-of-king-west-liberty-village.212890/page-6. Some of the others with populations of really small value appear to be also absent on other sources: https://www.citypopulation.de/en/canada/metrotoronto/
 to_census_split1 <- merge(to_census21, to_census_split_96, by.x = "geouid_21", by.y = "ctuid_t")
-view(to_census_split1)
 
-#View tracts with missing. There are none.
+#Check NA's
 na_rows <- to_census_split1[rowSums(is.na(to_census_split1)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_split1)
@@ -1166,6 +1150,7 @@ names(to_census_split1)
 # Clean up subset files
 rm(cw96_21_split)
 rm(to_census_split_96)
+rm(na_rows)
 ```
 
 ### 2001 to 2021 Splits
@@ -1184,7 +1169,7 @@ to_census_split_01 <- merge(to_census01, cw01_21_split, by.x = "geouid_01", by.y
 # Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_split_01) <- NULL
 
-# Assign weights to 2001 variables -- WARNING -- need to check if there are any missing values here otherwise you can't apply the weights
+# Assign weights to 2001 variables
 
 # Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) 
 names(to_census_split_01)
@@ -1213,7 +1198,6 @@ to_census_split2 <- merge(to_census21, to_census_split_01, by.x = "geouid_21", b
 
 #View tracts with missing. There are none.
 na_rows <- to_census_split2[rowSums(is.na(to_census_split2)) > 0, ]
-view(na_rows)
 
 # Rename
 names(to_census_split2)
@@ -1224,6 +1208,7 @@ names(to_census_split2)
 # Clean up subset files
 rm(cw01_21_split)
 rm(to_census_split_01)
+rm(na_rows)
 ```
 
 ### 2006 to 2021 Splits
@@ -1242,7 +1227,7 @@ to_census_split_06 <- merge(to_census06, cw06_21_split, by.x = "geouid_06", by.y
 # Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_split_06) <- NULL
 
-# Assign weights to 2006 variables -- WARNING -- need to check if there are any missing values here otherwise you can't apply the weights
+# Assign weights to 2006 variables
 
 # Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) 
 names(to_census_split_06)
@@ -1255,7 +1240,7 @@ variables_to_exclude <- c(
   "averagerent_06", "totalunemploymentrate_06", "unemploymentrate_m_06", 
   "unemploymentrate_f_06", "medianhouseholdincome_06", 
   "lowincomepercenteconomicfam_06", "lowincomepercentunattached_06", 
-  "lowincomepercentprivatehouseholds_06", "governmenttransfereconomicfam_06", "governmenttransferindividuals_06",
+  "lowincomepercentprivhousehold_06", "governmenttransfereconomicfam_06", "governmenttransferindividuals_06",
   "medianincomeindividuals_06", "medianincomeindividual_m_06", 
   "medianincomeindividual_f_06", "tract_num_06", "ctuid_t", "w", "f"
 )
@@ -1269,6 +1254,9 @@ to_census_split_06[, variables_to_weight] <- to_census_split_06[, variables_to_w
 # Merge 2006 and 2021
 to_census_split3 <- merge(to_census21, to_census_split_06, by.x = "geouid_21", by.y = "ctuid_t")
 
+#Check NA's. There are none.
+na_rows <- to_census_split3[rowSums(is.na(to_census_split3)) > 0, ]
+
 # Rename
 names(to_census_split3)
 names(to_census_split3)[180] <- "weight_06" # CAUTION with this if new variables are added
@@ -1278,6 +1266,7 @@ names(to_census_split3)
 # Clean up subset files
 rm(cw06_21_split)
 rm(to_census_split_06)
+rm(na_rows)
 ```
 
 ### 2011 to 2021 Splits
@@ -1296,9 +1285,9 @@ to_census_split_11 <- merge(to_census11, cw11_21_split, by.x = "geouid_11", by.y
 # Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_split_11) <- NULL
 
-# Assign weights to 2011 variables -- WARNING -- need to check if there are any missing values here otherwise you can't apply the weights
+# Assign weights to 2011 variables
 
-# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) # Create a vector of variable names to which you want to apply the weight
+# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) 
 names(to_census_split_11)
 variables_to_exclude <- c(
   "geouid_11", "type_11", "flags_11", "cmauid_11", "nonreturnrate_11", "csd_uid_11", "cd_uid_11", "pr_uid_11", "nonreturnrate_11.1",
@@ -1319,6 +1308,9 @@ to_census_split_11[, variables_to_weight] <- to_census_split_11[, variables_to_w
 # Merge 2011 and 2021
 to_census_split4 <- merge(to_census21, to_census_split_11, by.x = "geouid_21", by.y = "ctuid_t")
 
+#Check NA's. There are none.
+na_rows <- to_census_split4[rowSums(is.na(to_census_split4)) > 0, ]
+
 # Rename
 names(to_census_split4)
 names(to_census_split4)[172] <- "weight_11" # CAUTION with this if new variables are added
@@ -1328,6 +1320,7 @@ names(to_census_split4)
 # Clean up subset files
 rm(cw11_21_split)
 rm(to_census_split_11)
+rm(na_rows)
 ```
 
 ### 2016 to 2021 Splits
@@ -1346,16 +1339,15 @@ to_census_split_16 <- merge(to_census16, cw16_21_split, by.x = "geouid_16", by.y
 # Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_split_16) <- NULL
 
-# Assign weights to 2016 variables -- WARNING -- need to check if there are any missing values here otherwise you can't apply the weights
+# Assign weights to 2016 variables
 
-# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) # Create a vector of variable names to which you want to apply the weight
+# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) 
 names(to_census_split_16)
 variables_to_exclude <- c(
   "geouid_16", "type_16", "cmauid_16", "csd_uid_16", "cd_uid_16", "pr_uid_16",
   "region_name_16", "averagedwellingvalue_16", "medianfamilyincome_16", 
   "averagerent_16", "totalunemploymentrate_16", "unemploymentrate_m_16", 
-  "unemploymentrate_f_16", "medianhouseholdincome_16", 
-  "lowincomepercent_11", "governmenttransfer_16", 
+  "unemploymentrate_f_16", "medianhouseholdincome_16", "governmenttransfer_16", 
   "medianincomeindividuals_16", "medianincomeindividual_m_16", 
   "medianincomeindividual_f_16", "lowincomeLICOATpercent_16", "lowincomeLIMATpercent_16", "tract_num_16", "ctuid_t", "w", "f"
 )
@@ -1369,6 +1361,9 @@ to_census_split_16[, variables_to_weight] <- to_census_split_16[, variables_to_w
 # Merge 2016 and 2021
 to_census_split5 <- merge(to_census21, to_census_split_16, by.x = "geouid_21", by.y = "ctuid_t")
 
+#Check NA's. There are none.
+na_rows <- to_census_split5[rowSums(is.na(to_census_split5)) > 0, ]
+
 # Rename
 names(to_census_split5)
 names(to_census_split5)[173] <- "weight_16" # CAUTION with this if new variables are added
@@ -1378,6 +1373,7 @@ names(to_census_split5)
 # Clean up subset files
 rm(cw16_21_split)
 rm(to_census_split_16)
+rm(na_rows)
 ```
 
 ## Many to Many
@@ -1391,48 +1387,82 @@ unique(cw96_21$ctuid_s[cw96_21$f==4]) # 43 unique tracts sending many in 1996
 unique(cw96_21$ctuid_t[cw96_21$f==4]) # 52 unique tracts receiving many in 2021
 
 # Find tracts with many-to-many conversion in 1996
-cw96_21_m2m <- cw96_21[cw96_21$f == 4, ]#78
+cw96_21_m2m <- cw96_21[cw96_21$f == 4, ] #78
 
 # Merge 1996 data with census data
 to_census_m2m_96 <- merge(to_census96, cw96_21_m2m, by.x = "geouid_96", by.y = "ctuid_s")
 
-# Find tracts that didn't match
+# Find tracts that didn't match. The two tracts are tracts that weren't in Toronto or the burroughs boundaries in 1996 (5350400.01 and 5350806.00). These tracts are in Markham and Pickering so on the border of Toronto. The weights to be applied to them to merge into these tracts in 2021 (5350378.25, 5350378.26,5350378.27, and 5350378.27) are so negligible (pretty much all just 0.000) that it doesn't make sense to pull those in since it wouldn't change the counts.
 left_out_ctuid_s <- anti_join(cw96_21_m2m, to_census96, by = c("ctuid_s" = "geouid_96"))
 
-#Aggregate rows with same 2021 tract ID
-to_census_m2m_96 <- to_census_m2m_96 %>%
-  group_by(ctuid_t) %>%
-  mutate(across(-c(geouid_96, type_96, cmauid_96, key_96, csd_uid_96, cd_uid_96, region_name_96, w, f), 
-                ~ mean(., na.rm = TRUE)))
-
-# Remove the geometry column because it will be replaced with the 2021 file
+# Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_m2m_96) <- NULL
 
-# Convert ctuid_t to character if it's not already
-to_census_m2m_96$ctuid_t <- as.character(to_census_m2m_96$ctuid_t)
+#Do not assign weights to percent variables or averaged or median variables (look at census variable descriptions to determine which these are).  
+names(to_census_m2m_96)
+variables_to_exclude <- c(
+  "geouid_96", "type_96", "cmauid_96", "key_96", "csd_uid_96", "cd_uid_96", 
+  "region_name_96", "averagedwellingvalue_96", "medianfamilyincome_96", 
+  "averagerent_96", "totalunemploymentrate_96", "unemploymentrate_m_96", 
+  "unemploymentrate_f_96", "medianhouseholdincome_96", 
+  "lowincomepercenteconomicfam_96", "lowincomepercentunattached_96", 
+  "lowincomepercentprivatehouseholds_96", "governmenttransfer_96", 
+  "medianincomeindividual_96", "medianincomeindividual_m_96", 
+  "medianincomeindividual_f_96", "tract_num_96", "ctuid_t", "w", "f"
+)
 
-# Remove duplicates based on ctuid_t, keeping the first occurrence
-to_census_m2m_96 <- to_census_m2m_96[!duplicated(to_census_m2m_96$ctuid_t),]
+# Create a vector of variable names to which you want to apply the weight
+variables_to_weight <- setdiff(names(to_census_m2m_96), variables_to_exclude)
+
+# Apply the weight to the specified variables
+to_census_m2m_96[, variables_to_weight] <- to_census_m2m_96[, variables_to_weight] * to_census_m2m_96$w
+
+#Group data by 'ctuid_t'
+grouped_data <- group_by(to_census_m2m_96, ctuid_t)
+
+# Aggregate the data
+# Sum the values of variables in variables_to_weight for each group
+summed_values <- grouped_data %>%
+    summarise(across(all_of(variables_to_weight), sum, na.rm = TRUE))
+
+# Specify the columns you want to average (percents and medians)
+variables_to_aggregate <- c(
+    "averagedwellingvalue_96", "medianfamilyincome_96", 
+    "averagerent_96", "totalunemploymentrate_96", "unemploymentrate_m_96", 
+    "unemploymentrate_f_96", "medianhouseholdincome_96", 
+    "lowincomepercenteconomicfam_96", "lowincomepercentunattached_96", 
+    "lowincomepercentprivatehouseholds_96", "governmenttransfer_96", 
+    "medianincomeindividual_96", "medianincomeindividual_m_96", 
+    "medianincomeindividual_f_96"
+)
+
+# Calculate the mean of the specified columns for each ctuid_t
+averaged_values <- grouped_data %>% summarise(across(all_of(variables_to_aggregate), mean, na.rm = TRUE))
+
+# Combine the results
+to_census_m2m_96 <- left_join(summed_values, averaged_values, by = "ctuid_t")
 
 # Merge 2021 data with aggregated 1996 data
 to_census_m2m1 <- merge(to_census21, to_census_m2m_96, by.x = "geouid_21", by.y = "ctuid_t")
 
 # Rename
 names(to_census_m2m1)
-names(to_census_m2m1)[170] <- "weight_96"
-names(to_census_m2m1)[171] <- "flag_96"
-names(to_census_m2m1)
 
 # Clean up subset files
 rm(cw96_21_m2m)
 rm(to_census_m2m_96)
 
-# Confirm that the variables are identically ordered and stackable
-table(names(to_census_nochange1) == names(to_census_split1))
-table(names(to_census_split1) == names(to_census_m2m1))
+# Combine all data frames in a list
+data_frames96 <- list(to_census_nochange1, to_census_split1, to_census_m2m1)
 
-# Stack dataframes
-to_census1 <- rbind(to_census_nochange1, to_census_split1, to_census_m2m1)
+# Identify the common columns among the three data frames
+common_columns <- Reduce(intersect, map(data_frames96, names))
+
+# Subset each data frame to keep only the common columns, which are the only ones I will need anyways
+data_frames96 <- map(data_frames96, function(df) df %>% select(all_of(common_columns)))
+
+# Stack the data frames
+to_census1 <- bind_rows(data_frames96)
 ```
 
 ### 2001 to 2021 Many to Many
@@ -1449,34 +1479,76 @@ cw01_21_m2m <- cw01_21[cw01_21$f == 4,]
 # Merge 2001 data with census data
 to_census_m2m_01 <- merge(to_census01, cw01_21_m2m, by.x = "geouid_01", by.y = "ctuid_s")
 
-# Aggregate rows with the same 2001 tract ID
-to_census_m2m_01 <- to_census_m2m_01 %>%
-  group_by(ctuid_t) %>%
-  mutate(across(-c(geouid_01, type_01, cmauid_01, key_01, csd_uid_01, cd_uid_01, region_name_01, w, f), 
-                   mean, na.rm = TRUE))
-
-# Remove the geometry column
+# Remove the geometry column because it will be updated to the 2021 file
 st_geometry(to_census_m2m_01) <- NULL
 
-# Remove duplicates based on ctuid_t
-to_census_m2m_01 <- distinct(to_census_m2m_01, ctuid_t, .keep_all = TRUE)
+# Find tracts that didn't match. This one tract wasn't in Toronto boundaries in 2001 (5350400.01). This tract is in Markham so on the border of Toronto. The weights to be applied to merge into this tracts in 2021 (5350378.25) are so negligible (pretty much just 0.000) that it doesn't make sense to pull  in since it wouldn't change the counts at all.
+left_out_ctuid_s <- anti_join(cw01_21_m2m, to_census01, by = c("ctuid_s" = "geouid_01"))
+
+#Do not assign weights to percent variables or averaged or median variables (look at census variable descriptions to determine which these are).  
+names(to_census_m2m_01)
+variables_to_exclude <- c(
+  "geouid_01", "type_01", "cmauid_01", "key_01", "csd_uid_01", "cd_uid_01", "pr_uid_01",
+  "region_name_01", "averagedwellingvalue_01", "medianfamilyincome_01", 
+  "averagerent_01", "totalunemploymentrate_01", "unemploymentrate_m_01", 
+  "unemploymentrate_f_01", "medianhouseholdincome_01", 
+  "lowincomepercenteconomicfam_01", "lowincomepercentunattached_01", 
+  "lowincomepercentprivatehouseholds_01", "governmenttransfer_01", 
+  "medianincomeindividual_01", "medianincomeindividual_m_01", 
+  "medianincomeindividual_f_01", "tract_num_01", "ctuid_t", "w", "f"
+)
+
+# Create a vector of variable names to which you want to apply the weight
+variables_to_weight <- setdiff(names(to_census_m2m_01), variables_to_exclude)
+
+# Apply the weight to the specified variables
+to_census_m2m_01[, variables_to_weight] <- to_census_m2m_01[, variables_to_weight] * to_census_m2m_01$w
+
+#Group data by 'ctuid_t'
+grouped_data <- group_by(to_census_m2m_01, ctuid_t)
+
+# Aggregate the data
+# Sum the values of variables in variables_to_weight for each group
+summed_values <- grouped_data %>%
+    summarise(across(all_of(variables_to_weight), sum, na.rm = TRUE))
+
+# Specify the columns you want to average (percents and medians)
+variables_to_aggregate <- c("averagedwellingvalue_01", "medianfamilyincome_01", 
+  "averagerent_01", "totalunemploymentrate_01", "unemploymentrate_m_01", 
+  "unemploymentrate_f_01", "medianhouseholdincome_01", 
+  "lowincomepercenteconomicfam_01", "lowincomepercentunattached_01", 
+  "lowincomepercentprivatehouseholds_01", "governmenttransfer_01", 
+  "medianincomeindividual_01", "medianincomeindividual_m_01", 
+  "medianincomeindividual_f_01"
+)
+
+# Calculate the mean of the specified columns for each ctuid_t
+averaged_values <- grouped_data %>% summarise(across(all_of(variables_to_aggregate), mean, na.rm = TRUE))
+
+# Combine the results
+to_census_m2m_01 <- left_join(summed_values, averaged_values, by = "ctuid_t")
 
 # Merge 2021 data with aggregated 2001 data
 to_census_m2m2 <- merge(to_census21, to_census_m2m_01, by.x = "geouid_21", by.y = "ctuid_t")
 
-# Rename columns
-names(to_census_m2m2)
-names(to_census_m2m2)[173:174] <- c("weight_01", "flag_01")
+# Rename
+names(to_census_m2m1)
 
-# Clean up
-rm(cw01_21_m2m, to_census_m2m_01)
+# Clean up subset files
+rm(cw01_21_m2m)
+rm(to_census_m2m_01)
 
-# Confirm stackability
-table(names(to_census_nochange2) == names(to_census_split2))
-table(names(to_census_split2) == names(to_census_m2m2))
+# Combine all data frames in a list
+data_frames01 <- list(to_census_nochange2, to_census_split2, to_census_m2m2)
 
-# Stack dataframes
-to_census2 <- rbind(to_census_nochange2, to_census_split2, to_census_m2m2)
+# Identify the common columns among the three data frames
+common_columns <- Reduce(intersect, map(data_frames01, names))
+
+# Subset each data frame to keep only the common columns, which are the only ones I will need anyways
+data_frames01 <- map(data_frames01, function(df) df %>% select(all_of(common_columns)))
+
+# Stack the data frames
+to_census2 <- bind_rows(data_frames01)
 
 ```
 
@@ -1500,17 +1572,18 @@ st_geometry(to_census_m2m_06) <- NULL
 names(to_census_m2m_06)
 summary(to_census_m2m_06)
 
-# Assign weights to 2006 variables 
+# Find tracts that didn't match. There are none. 
+left_out_ctuid_s <- anti_join(cw06_21_m2m, to_census06, by = c("ctuid_s" = "geouid_06"))
 
 #Do not assign weights to percent variables or averaged or median variables (look at census variable descriptions to determine which these are).  
-# Create a vector of variable names to which you want to apply the weight
+names(to_census_m2m_06)
 variables_to_exclude <- c(
   "geouid_06", "type_06", "flags_06", "cmauid_06", "csd_uid_06", "cd_uid_06", "pr_uid_06",
   "region_name_06", "averagedwellingvalue_06", "medianfamilyincome_06", 
   "averagerent_06", "totalunemploymentrate_06", "unemploymentrate_m_06", 
   "unemploymentrate_f_06", "medianhouseholdincome_06", 
   "lowincomepercenteconomicfam_06", "lowincomepercentunattached_06", 
-  "lowincomepercentprivatehouseholds_06", "governmenttransfereconomicfam_06", "governmenttransferindividuals_06",
+  "lowincomepercentprivhousehold_06", "governmenttransfereconomicfam_06", "governmenttransferindividuals_06",
   "medianincomeindividuals_06", "medianincomeindividual_m_06", 
   "medianincomeindividual_f_06", "tract_num_06", "ctuid_t", "w", "f"
 )
@@ -1521,66 +1594,48 @@ variables_to_weight <- setdiff(names(to_census_m2m_06), variables_to_exclude)
 # Apply the weight to the specified variables
 to_census_m2m_06[, variables_to_weight] <- to_census_m2m_06[, variables_to_weight] * to_census_m2m_06$w
 
-#See which ones are duplicate and you will have to delete later.
-table(to_census_m2m_06$ctuid_t)
-names(to_census_m2m_06)
+#Group data by 'ctuid_t'
+grouped_data <- group_by(to_census_m2m_06, ctuid_t)
 
-# Identify the rows to aggregate, add the cells, delete the second row at the end
-#Matches in ctuid_t- aggregate - this 20 percent moves across to this tract
+# Aggregate the data
+# Sum the values of variables in variables_to_weight for each group
+summed_values <- grouped_data %>%
+    summarise(across(all_of(variables_to_weight), sum, na.rm = TRUE))
 
-# 2021 tract 5350007.01
-#Missing values in first row (2006 tract 5350006 missing data from gets _census)
-to_census_m2m_06[2, c(2,4,7,9,13:92)] <- to_census_m2m_06[2, c(2,4,7,9,13:92)] + to_census_m2m_06[3, c(2,4,7,9,13:92)] 
-to_census_m2m_06[2, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]<-to_census_m2m_06[2, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Specify the columns you want to average (percents and medians)
+variables_to_aggregate <- c("averagedwellingvalue_06", "medianfamilyincome_06", 
+  "averagerent_06", "totalunemploymentrate_06", "unemploymentrate_m_06", 
+  "unemploymentrate_f_06", "medianhouseholdincome_06", 
+  "lowincomepercenteconomicfam_06", "lowincomepercentunattached_06", 
+  "lowincomepercentprivhousehold_06", "governmenttransfereconomicfam_06", "governmenttransferindividuals_06",
+  "medianincomeindividuals_06", "medianincomeindividual_m_06", 
+  "medianincomeindividual_f_06"
+)
 
-# 2021 tract 5350194.01
-to_census_m2m_06[4, c(2,4,7,9,13:92)] <- to_census_m2m_06[4, c(2,4,7,9,13:92)] + to_census_m2m_06[5, c(2,4,7,9,13:92)] 
-to_census_m2m_06[4, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]<-to_census_m2m_06[4, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Calculate the mean of the specified columns for each ctuid_t
+averaged_values <- grouped_data %>% summarise(across(all_of(variables_to_aggregate), mean, na.rm = TRUE))
 
-# 2021 tract 5350305.06
-to_census_m2m_06[8, c(2,4,7,9,13:92)] <- to_census_m2m_06[8, c(2,4,7,9,13:92)] + to_census_m2m_06[11, c(2,4,7,9,13:92)] 
-to_census_m2m_06[8, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]<-to_census_m2m_06[8, c(44,59,63,81,82,83,84,85,86,87,88,89,90,91,92)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Combine the results
+to_census_m2m_06 <- left_join(summed_values, averaged_values, by = "ctuid_t")
 
-# Remove the rows that were aggregated, second rows in the aggregations above. Remove duplicates. 
-to_census_m2m_06 <- to_census_m2m_06[-c(3,5,11),] # should result in 8 2016 tracts
-rownames(to_census_m2m_06) <- NULL
-
-# Confirm that there are no duplicates in the 2021 tracts. 
-table(to_census_m2m_06$ctuid_t)
-
-# Merge 2006 and 2021
+# Merge 2021 data with aggregated 2006 data
 to_census_m2m3 <- merge(to_census21, to_census_m2m_06, by.x = "geouid_21", by.y = "ctuid_t")
-
-# Inspect
-ncol(to_census_m2m3) # 182
-nrow(to_census_m2m3) # 8
-
-# Rename
-names(to_census_m2m3)
-names(to_census_m2m3)[180] <- "weight_06"
-names(to_census_m2m3)[181] <- "flag_06"
-names(to_census_m2m3)
 
 # Clean up subset files
 rm(cw06_21_m2m)
 rm(to_census_m2m_06)
 
-# Confirm that the variables are identically ordered and stackable
-table(names(to_census_nochange3) == names(to_census_split3))
-table(names(to_census_split3) == names(to_census_m2m3))
+# Combine all data frames in a list
+data_frames06 <- list(to_census_nochange3, to_census_split3, to_census_m2m3)
 
-# Stack sf dataframes
-to_census3 <- rbind(to_census_nochange3, to_census_split3, to_census_m2m3)
+# Identify the common columns among the three data frames
+common_columns <- Reduce(intersect, map(data_frames06, names))
 
-# Inspect
-nrow(to_census3) # 585 which is the number of total tracts in 2021
+# Subset each data frame to keep only the common columns, which are the only ones I will need anyways
+data_frames06 <- map(data_frames06, function(df) df %>% select(all_of(common_columns)))
 
-# Clean up
-rm(cw06_21)
-rm(to_census_nochange3)
-rm(to_census_split3)
-rm(to_census_m2m3)
-
+# Stack the data frames
+to_census3 <- bind_rows(data_frames06)
 ```
 
 ### 2011 to 2021 Many to Many
@@ -1604,13 +1659,13 @@ st_geometry(to_census_m2m_11) <- NULL
 names(to_census_m2m_11)
 summary(to_census_m2m_11)
 
-# Assign weights to 2011 variables 
+# Find tracts that didn't match. There are none. 
+left_out_ctuid_s <- anti_join(cw11_21_m2m, to_census11, by = c("ctuid_s" = "geouid_11"))
 
 #Do not assign weights to percent variables or averaged or median variables (look at census variable descriptions to determine which these are).  
-# Create a vector of variable names to which you want to apply the weight
 names(to_census_m2m_11)
 variables_to_exclude <- c(
-  "geouid_11", "type_11", "flags_11", "cmauid_11", "nonreturnrate_11", "csd_uid_11", "cd_uid_11", "pr_uid_11", "nonreturnrate_11.1",
+"geouid_11", "type_11", "flags_11", "cmauid_11", "nonreturnrate_11", "csd_uid_11", "cd_uid_11", "pr_uid_11", "nonreturnrate_11.1",
   "region_name_11", "averagedwellingvalue_11", "medianfamilyincome_11", 
   "averagerent_11", "totalunemploymentrate_11", "unemploymentrate_m_11", 
   "unemploymentrate_f_11", "medianhouseholdincome_11", 
@@ -1625,65 +1680,48 @@ variables_to_weight <- setdiff(names(to_census_m2m_11), variables_to_exclude)
 # Apply the weight to the specified variables
 to_census_m2m_11[, variables_to_weight] <- to_census_m2m_11[, variables_to_weight] * to_census_m2m_11$w
 
-#See which ones are duplicate and you will have to delete later.
-table(to_census_m2m_11$ctuid_t)
-names(to_census_m2m_11)
+#Group data by 'ctuid_t'
+grouped_data <- group_by(to_census_m2m_11, ctuid_t)
 
-# Identify the rows to aggregate, add the cells, delete the second row at the end
-#Matches in ctuid_t- aggregate - this 20 percent moves across to this tract
+# Aggregate the data
+# Sum the values of variables in variables_to_weight for each group
+summed_values <- grouped_data %>%
+    summarise(across(all_of(variables_to_weight), sum, na.rm = TRUE))
 
-# 2021 tract 5350194.01
-to_census_m2m_11[1, c(2,4,8,10,14,16:84)] <- to_census_m2m_11[1, c(2,4,8,10,14,16:84)] + to_census_m2m_11[2, c(2,4,8,10,14,16:84)] + to_census_m2m_11[4, c(2,4,8,10,14,16:84)] 
-to_census_m2m_11[1, c(55,59,74,75,76,77,79,80,81,82,83,84)]<-to_census_m2m_11[1, c(55,59,74,75,76,77,79,80,81,82,83,84)]/3 #Divide the percent variables, median variables, and average variables to get the averages.
+# Specify the columns you want to average (percents and medians)
+variables_to_aggregate <- c("averagedwellingvalue_11", "medianfamilyincome_11", 
+  "averagerent_11", "totalunemploymentrate_11", "unemploymentrate_m_11", 
+  "unemploymentrate_f_11", "medianhouseholdincome_11", 
+  "lowincomepercent_11", "governmenttransfer_11", 
+  "medianincomeindividuals_11", "medianincomeindividual_m_11", 
+  "medianincomeindividual_f_11"
+)
 
-# 2021 tract 5350244.02
-to_census_m2m_11[7, c(2,4,8,10,14,16:84)] <- to_census_m2m_11[7, c(2,4,8,10,14,16:84)] + to_census_m2m_11[8, c(2,4,8,10,14,16:84)] 
-to_census_m2m_11[7, c(55,59,74,75,76,77,79,80,81,82,83,84)]<-to_census_m2m_11[7, c(55,59,74,75,76,77,79,80,81,82,83,84)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Calculate the mean of the specified columns for each ctuid_t
+averaged_values <- grouped_data %>% summarise(across(all_of(variables_to_aggregate), mean, na.rm = TRUE))
 
-# 2021 tract 5350305.06
-to_census_m2m_11[10, c(2,4,8,10,14,16:84)] <- to_census_m2m_11[10, c(2,4,8,10,14,16:84)] + to_census_m2m_11[12, c(2,4,8,10,14,16:84)] 
-to_census_m2m_11[10, c(55,59,74,75,76,77,79,80,81,82,83,84)]<-to_census_m2m_11[10, c(55,59,74,75,76,77,79,80,81,82,83,84)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Combine the results
+to_census_m2m_11 <- left_join(summed_values, averaged_values, by = "ctuid_t")
 
-
-# Remove the rows that were aggregated, second rows in the aggregations above. Remove duplicates. 
-to_census_m2m_11 <- to_census_m2m_11[-c(2,4,8,12),] # should result in 12 2021 tracts
-rownames(to_census_m2m_11) <- NULL
-
-# Confirm that there are no duplicates in the 2021 tracts. 
-table(to_census_m2m_11$ctuid_t)
-
-# Merge 2011 and 2021
+# Merge 2021 data with aggregated 2011 data
 to_census_m2m4 <- merge(to_census21, to_census_m2m_11, by.x = "geouid_21", by.y = "ctuid_t")
-
-# Inspect
-ncol(to_census_m2m4) # 174
-nrow(to_census_m2m4) # 8
-
-# Rename
-names(to_census_m2m4)
-names(to_census_m2m4)[172] <- "weight_11"
-names(to_census_m2m4)[173] <- "flag_11"
-names(to_census_m2m4)
 
 # Clean up subset files
 rm(cw11_21_m2m)
 rm(to_census_m2m_11)
 
-# Confirm that the variables are identically ordered and stackable
-table(names(to_census_nochange4) == names(to_census_split4))
-table(names(to_census_split4) == names(to_census_m2m4))
+# Combine all data frames in a list
+data_frames11 <- list(to_census_nochange4, to_census_split4, to_census_m2m4)
 
-# Stack sf dataframes
-to_census4 <- rbind(to_census_nochange4, to_census_split4, to_census_m2m4)
+# Identify the common columns among the three data frames
+common_columns <- Reduce(intersect, map(data_frames11, names))
 
-# Inspect
-nrow(to_census4) # 585 which is the number of total tracts in 2021
+# Subset each data frame to keep only the common columns, which are the only ones I will need anyways
+data_frames11 <- map(data_frames11, function(df) df %>% select(all_of(common_columns)))
 
-# Clean up
-rm(cw11_21)
-rm(to_census_nochange4)
-rm(to_census_split4)
-rm(to_census_m2m4)
+# Stack the data frames
+to_census4 <- bind_rows(data_frames11)
+
 ```
 
 ### 2016 to 2021 Many to Many
@@ -1707,18 +1745,16 @@ st_geometry(to_census_m2m_16) <- NULL
 names(to_census_m2m_16)
 summary(to_census_m2m_16)
 
-# Assign weights to 2016 variables 
-# Also don't apply this to percent variables or averages (check variable descriptions to know which ones these are) # Create a vector of variable names to which you want to apply the weight
+# Find tracts that didn't match. There are none. 
+left_out_ctuid_s <- anti_join(cw16_21_m2m, to_census16, by = c("ctuid_s" = "geouid_16"))
+
+#Do not assign weights to percent variables or averaged or median variables (look at census variable descriptions to determine which these are).  
 names(to_census_m2m_16)
-variables_to_exclude <- c(
-  "geouid_16", "type_16", "cmauid_16", "csd_uid_16", "cd_uid_16", "pr_uid_16",
-  "region_name_16", "averagedwellingvalue_16", "medianfamilyincome_16", 
+variables_to_exclude <- c("geouid_16", "type_16", "cmauid_16", "csd_uid_16", "cd_uid_16", "pr_uid_16", "region_name_16", "averagedwellingvalue_16", "medianfamilyincome_16", 
   "averagerent_16", "totalunemploymentrate_16", "unemploymentrate_m_16", 
-  "unemploymentrate_f_16", "medianhouseholdincome_16", 
-  "lowincomepercent_11", "governmenttransfer_16", 
+  "unemploymentrate_f_16", "medianhouseholdincome_16", "governmenttransfer_16", 
   "medianincomeindividuals_16", "medianincomeindividual_m_16", 
-  "medianincomeindividual_f_16", "lowincomeLICOATpercent_16", "lowincomeLIMATpercent_16", "tract_num_16", "ctuid_t", "w", "f"
-)
+  "medianincomeindividual_f_16", "lowincomeLICOATpercent_16", "lowincomeLIMATpercent_16", "tract_num_16", "ctuid_t", "w", "f")
 
 # Create a vector of variable names to which you want to apply the weight
 variables_to_weight <- setdiff(names(to_census_m2m_16), variables_to_exclude)
@@ -1726,1162 +1762,355 @@ variables_to_weight <- setdiff(names(to_census_m2m_16), variables_to_exclude)
 # Apply the weight to the specified variables
 to_census_m2m_16[, variables_to_weight] <- to_census_m2m_16[, variables_to_weight] * to_census_m2m_16$w
 
-#See which ones are duplicate and you will have to delete later.
-table(to_census_m2m_16$ctuid_t)
-names(to_census_m2m_16)
+#Group data by 'ctuid_t'
+grouped_data <- group_by(to_census_m2m_16, ctuid_t)
 
-# Identify the rows to aggregate, add the cells, delete the second row at the end
-#Matches in ctuid_t- aggregate - this 20 percent moves across to this tract
+# Aggregate the data
+# Sum the values of variables in variables_to_weight for each group
+summed_values <- grouped_data %>%
+    summarise(across(all_of(variables_to_weight), sum, na.rm = TRUE))
 
-# 2021 tract 5350194.01
-to_census_m2m_16[1, c(3,4,5,7,9,13,14:85)] <- to_census_m2m_16[1, c(3,4,5,7,9,13,14:85)] + to_census_m2m_16[2, c(3,4,5,7,9,13,14:85)] 
-to_census_m2m_16[1, c(42,52,72,73,74,76,77,78,79,80,81,83,85)]<-to_census_m2m_16[1, c(42,52,72,73,74,76,77,78,79,80,81,83,85:85)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Specify the columns you want to average (percents and medians)
+variables_to_aggregate <- c("averagedwellingvalue_16", "medianfamilyincome_16", 
+  "averagerent_16", "totalunemploymentrate_16", "unemploymentrate_m_16", 
+  "unemploymentrate_f_16", "medianhouseholdincome_16", "governmenttransfer_16", 
+  "medianincomeindividuals_16", "medianincomeindividual_m_16", 
+  "medianincomeindividual_f_16", "lowincomeLICOATpercent_16", "lowincomeLIMATpercent_16"
+)
 
-# 2021 tract 5350244.02
-to_census_m2m_16[5, c(3,4,5,7,9,13,14:85)] <- to_census_m2m_16[5, c(3,4,5,7,9,13,14:85)] + to_census_m2m_16[6, c(3,4,5,7,9,13,14:85)] 
-to_census_m2m_16[5, c(42,52,72,73,74,76,77,78,79,80,81,83,85:85)]<-to_census_m2m_16[5, c(42,52,72,73,74,76,77,78,79,80,81,83,85:85)]/2 #Divide the percent variables, median variables, and average variables to get the averages.
+# Calculate the mean of the specified columns for each ctuid_t
+averaged_values <- grouped_data %>% summarise(across(all_of(variables_to_aggregate), mean, na.rm = TRUE))
 
-# Remove the rows that were aggregated, second rows in the aggregations above. Remove duplicates. 
-to_census_m2m_16 <- to_census_m2m_16[-c(2,6),] # should result in 4 2021 tracts
-rownames(to_census_m2m_16) <- NULL
+# Combine the results
+to_census_m2m_16 <- left_join(summed_values, averaged_values, by = "ctuid_t")
 
-# Confirm that there are no duplicates in the 2021 tracts. 
-table(to_census_m2m_16$ctuid_t)
-
-# Merge 2016 and 2021
+# Merge 2021 data with aggregated 2011 data
 to_census_m2m5 <- merge(to_census21, to_census_m2m_16, by.x = "geouid_21", by.y = "ctuid_t")
-
-# Inspect
-ncol(to_census_m2m5) # 175
-nrow(to_census_m2m5) # 4
-
-# Rename
-names(to_census_m2m5)
-names(to_census_m2m5)[173] <- "weight_16"
-names(to_census_m2m5)[174] <- "flag_16"
-names(to_census_m2m5)
 
 # Clean up subset files
 rm(cw16_21_m2m)
 rm(to_census_m2m_16)
 
-# Confirm that the variables are identically ordered and stackable
-table(names(to_census_nochange5) == names(to_census_split5))
-table(names(to_census_split5) == names(to_census_m2m5))
+# Combine all data frames in a list
+data_frames16 <- list(to_census_nochange5, to_census_split5, to_census_m2m5)
 
-# Stack sf dataframes
-to_census5 <- rbind(to_census_nochange5, to_census_split5, to_census_m2m5)
+# Identify the common columns among the three data frames
+common_columns <- Reduce(intersect, map(data_frames16, names))
 
-# Inspect
-nrow(to_census5) # 585 which is the number of total tracts in 2021
+# Subset each data frame to keep only the common columns, which are the only ones I will need anyways
+data_frames16 <- map(data_frames16, function(df) df %>% select(all_of(common_columns)))
 
-# Clean up
-rm(cw16_21)
-rm(to_census_nochange5)
-rm(to_census_split5)
-rm(to_census_m2m5)
+# Stack the data frames
+to_census5 <- bind_rows(data_frames16)
 ```
 
-# Creating a Panel Dataset
+## Panel Dataset
 
 ```{r}
-to_census_full<-cbind(to_census1,to_census2,to_census3,to_census4,to_census5)
-names(to_census_full)
-
-#Delete 2021 duplicate columns
-to_census_full <- to_census_full[,-c(172:257,346:431,527:612,700:785,875:878)] 
-
-#Sub-setting to create panel data and adding year column
-to_census21panel <- to_census_full[,c(1:86,530)] 
-to_census96panel <- to_census_full[,c(1,87:169,530)] 
-to_census01panel <- to_census_full[,c(1,172:257,530)] 
-to_census06panel <- to_census_full[,c(1,260:352,530)] 
-to_census11panel <- to_census_full[,c(1,355:439,530)] 
-to_census16panel <- to_census_full[,c(1,442:530,530)] 
-
-#Need to fix all column names to be the same to be able to make it panel data
-#2021
-names(to_census21panel)
-to_census21panel$tract_num<-to_census21panel$geouid_21
-to_census21panel$shapearea<-to_census21panel$shapearea_21
-to_census21panel$type<-to_census21panel$type_21
-to_census21panel$households<-to_census21panel$households_21
-to_census21panel$cmauid<-to_census21panel$cmauid_21
-to_census21panel$pop<-to_census21panel$pop_21
-to_census21panel$dwellings<-to_census21panel$dwellings_21
-to_census21panel$csd_uid<-to_census21panel$csd_uid_21
-to_census21panel$cd_uid<-to_census21panel$cd_uid_21
-to_census21panel$areasqkm<-to_census21panel$areasqkm_21
-to_census21panel$population<-to_census21panel$population_21
-to_census21panel$totpopsexage<-to_census21panel$totpopsexage_21
-to_census21panel$male<-to_census21panel$male_21
-to_census21panel$female<-to_census21panel$female_21
-to_census21panel$landareasqkm<-to_census21panel$landareasqkm_21
-to_census21panel$totcensusfamilies<-to_census21panel$totcensusfamilies_21
-to_census21panel$loneparent<-to_census21panel$loneparent_21
-to_census21panel$femaleloneparent<-to_census21panel$femaleloneparent_21
-to_census21panel$maleloneparent<-to_census21panel$maleloneparent_21
-to_census21panel$canadiancitizens<-to_census21panel$canadiancitizens_21
-to_census21panel$totpopbycitizenship<-to_census21panel$totpopbycitizenship_21
-to_census21panel$noncanadiancitizens<-to_census21panel$noncandiancitizens_21
-to_census21panel$totpopplaceofbirth<-to_census21panel$totpopplaceofbirth_21
-to_census21panel$immigrants<-to_census21panel$immigrants_21
-to_census21panel$totaboriginal<-to_census21panel$totindigenous_21
-to_census21panel$aboriginal<-to_census21panel$indigenous_21
-to_census21panel$occupieddwellings<-to_census21panel$totprivdwellingsbytenure_21
-to_census21panel$rented<-to_census21panel$rented_21
-to_census21panel$owned<-to_census21panel$owned_21
-to_census21panel$totvisibleminoritygroups<-to_census21panel$totvisibleminoritygroups_21
-to_census21panel$visibleminority<-to_census21panel$visibleminority_21
-to_census21panel$southasian<-to_census21panel$southasian_21
-to_census21panel$chinese<-to_census21panel$chinese_21
-to_census21panel$black<-to_census21panel$black_21
-to_census21panel$filipino<-to_census21panel$filipino_21
-to_census21panel$arab<-to_census21panel$arab_21
-to_census21panel$latinamerican<-to_census21panel$latinamerican_21
-to_census21panel$southeastasian<-to_census21panel$southeastasian_21
-to_census21panel$westasian<-to_census21panel$westasian_21
-to_census21panel$korean<-to_census21panel$korean_21
-to_census21panel$japanese<-to_census21panel$japanese_21
-to_census21panel$visibleminoritynie<-to_census21panel$visibleminoritynie_21
-to_census21panel$multiplevisminority<-to_census21panel$multiplevisminority_21
-to_census21panel$averagerent<-to_census21panel$averagerent_21
-to_census21panel$averagedwellingvalue<-to_census21panel$averagedwellingvalue_21
-to_census21panel$totmobilitystatus1yrago<-to_census21panel$totmobilitystatus1yrago_21
-to_census21panel$nonmovers1yr<-to_census21panel$nonmovers1yr_21
-to_census21panel$totmobilitystatus5yrago<-to_census21panel$totmobilitystatus5yrago_21
-to_census21panel$movers1yr<-to_census21panel$movers1yr_21
-to_census21panel$nonmovers5yr<-to_census21panel$nonmovers5yr_21
-to_census21panel$movers5yr<-to_census21panel$movers5yr_21
-to_census21panel$age_m_15_19<-to_census21panel$age_m_15_19_21
-to_census21panel$age_m_20_24<-to_census21panel$age_m_20_24_21
-to_census21panel$age_f_15_19<-to_census21panel$age_f_15_19_21
-to_census21panel$age_f_20_24<-to_census21panel$age_f_20_24_21
-to_census21panel$age_m_25_29<-to_census21panel$age_m_25_29_21
-to_census21panel$age_f_25_29<-to_census21panel$age_f_25_29_21
-to_census21panel$totpophighestschooling<-to_census21panel$totpophighestschooling_21
-to_census21panel$bachelorsdegree<-to_census21panel$bachelorsdegree_21
-to_census21panel$highschool<-to_census21panel$highschool_21
-to_census21panel$nodegree<-to_census21panel$nodegree_21
-to_census21panel$totalunemployed<-to_census21panel$totalunemployed_21
-to_census21panel$unemployed_m<-to_census21panel$unemployed_m_21
-to_census21panel$unemployed_f<-to_census21panel$unemployed_f_21
-to_census21panel$totlabourforce<-to_census21panel$totlabourforce_21
-to_census21panel$medianhouseholdincome<-to_census21panel$medianhouseholdincome_21
-to_census21panel$governmenttransfer<-to_census21panel$governmenttransfer_21
-to_census21panel$medianincomeindividuals<-to_census21panel$medianincomeindividuals_21
-to_census21panel$medianincomeindividual_m<-to_census21panel$medianincomeindividual_m_21
-to_census21panel$medianincomeindividual_f<-to_census21panel$medianincomeindividual_f_21
-to_census21panel$lowincomeprivhouseholdraw<-to_census21panel$lowincomeLICOAT_21
-to_census21panel$lowincomeprivhouseholdpercent<-to_census21panel$lowincomeLICOATpercent_21
-to_census21panel$geometry<-to_census21panel$geometry
-to_census21panel$year<-2021
-
-
-#1996
-to_census96panel$tract_num<-to_census96panel$geouid_21
-to_census96panel$shapearea<-to_census96panel$shapearea_96
-to_census96panel$type<-to_census96panel$type_96
-to_census96panel$households<-to_census96panel$households_96
-to_census96panel$geouid<-to_census96panel$geouid_96
-to_census96panel$cmauid<-to_census96panel$cmauid_96
-to_census96panel$pop<-to_census96panel$pop_96
-to_census96panel$dwellings<-to_census96panel$dwellings_96
-to_census96panel$csd_uid<-to_census96panel$csd_uid_96
-to_census96panel$cd_uid<-to_census96panel$cd_uid_96
-to_census96panel$areasqkm<-to_census96panel$areasqkm_96
-to_census96panel$population<-to_census96panel$population_96
-to_census96panel$totpopsexage<-to_census96panel$totpopsexage_96
-to_census96panel$male<-to_census96panel$male_96
-to_census96panel$female<-to_census96panel$female_96
-to_census96panel$landareasqkm<-to_census96panel$landareasqkm_96
-to_census96panel$totcensusfamilies<-to_census96panel$totcensusfamilies_96
-to_census96panel$loneparent<-to_census96panel$loneparent_96
-to_census96panel$femaleloneparent<-to_census96panel$femaleloneparent_96
-to_census96panel$maleloneparent<-to_census96panel$maleloneparent_96
-to_census96panel$canadiancitizens<-to_census96panel$canadiancitizens_96
-to_census96panel$totpopbycitizenship<-to_census96panel$totpopbycitizenship_96
-to_census96panel$noncanadiancitizens<-to_census96panel$noncanadiancitizens_96
-to_census96panel$totpopplaceofbirth<-to_census96panel$totpopplaceofbirth_96
-to_census96panel$immigrants<-to_census96panel$immigrants_96
-to_census96panel$totaboriginal<-to_census96panel$totaboriginal_96
-to_census96panel$aboriginal<-to_census96panel$aboriginal_96
-to_census96panel$occupieddwellings<-to_census96panel$occupieddwellings_96
-to_census96panel$rented<-to_census96panel$rented_96
-to_census96panel$owned<-to_census96panel$owned_96
-to_census96panel$totvisibleminoritygroups<-to_census96panel$totvisibleminoritygroups_96
-to_census96panel$visibleminority<-to_census96panel$visibleminority_96
-to_census96panel$southasian<-to_census96panel$southasian_96
-to_census96panel$chinese<-to_census96panel$chinese_96
-to_census96panel$black<-to_census96panel$black_96
-to_census96panel$filipino<-to_census96panel$filipino_96
-to_census96panel$arab<-to_census96panel$arab_96
-to_census96panel$latinamerican<-to_census96panel$latinamerican_96
-to_census96panel$southeastasian<-to_census96panel$southeastasian_96
-to_census96panel$westasian<-NA
-to_census96panel$korean<-to_census96panel$korean_96
-to_census96panel$japanese<-to_census96panel$japanese_96
-to_census96panel$visibleminoritynie<-to_census96panel$visibleminoritynie_96
-to_census96panel$multiplevisminority<-to_census96panel$multiplevisminority_96
-to_census96panel$averagerent<-to_census96panel$averagerent_96
-to_census96panel$averagedwellingvalue<-to_census96panel$averagedwellingvalue_96
-to_census96panel$totmobilitystatus1yrago<-to_census96panel$totmobilitystatus1yrago_96
-to_census96panel$nonmovers1yr<-to_census96panel$nonmovers1yr_96
-to_census96panel$totmobilitystatus5yrago<-to_census96panel$totmobilitystatus5yrago_96
-to_census96panel$movers1yr<-to_census96panel$movers1yr_96
-to_census96panel$nonmovers5yr<-to_census96panel$nonmovers5yr_96
-to_census96panel$movers5yr<-to_census96panel$movers5yr_96
-to_census96panel$age_m_15_19<-to_census96panel$age_m_15_19_96
-to_census96panel$age_m_20_24<-to_census96panel$age_m_20_24_96
-to_census96panel$age_f_15_19<-to_census96panel$age_f_15_19_96
-to_census96panel$age_f_20_24<-to_census96panel$age_f_20_24_96
-to_census96panel$age_m_25_29<-to_census96panel$age_m_25_29_96
-to_census96panel$age_f_25_29<-to_census96panel$age_f_25_29_96
-to_census96panel$totpophighestschooling<-to_census96panel$totpophighestschooling_96
-to_census96panel$bachelorsdegree<-to_census96panel$bachelorsdegree_96
-to_census96panel$highschool<-to_census96panel$highschool_96
-to_census96panel$nodegree<-to_census96panel$nodegree_96
-to_census96panel$totalunemployed<-to_census96panel$totalunemployed_96
-to_census96panel$unemployed_m<-to_census96panel$unemployed_m_96
-to_census96panel$unemployed_f<-to_census96panel$unemployed_f_96
-to_census96panel$totlabourforce<-to_census96panel$totlabourforce_96
-to_census96panel$medianhouseholdincome<-to_census96panel$medianhouseholdincome_96
-to_census96panel$governmenttransfer<-to_census96panel$governmenttransfer_96
-to_census96panel$medianincomeindividuals<-to_census96panel$medianincomeindividual_96
-to_census96panel$medianincomeindividual_m<-to_census96panel$medianincomeindividual_m_96
-to_census96panel$medianincomeindividual_f<-to_census96panel$medianincomeindividual_f_96
-to_census96panel$lowincomeprivhouseholdraw<-to_census96panel$lowincomeprivatehouseholds_96
-to_census96panel$lowincomeprivhouseholdpercent<-to_census96panel$lowincomepercentprivatehouseholds_96
-to_census96panel$geometry<-to_census96panel$geometry
-to_census96panel$year<-1996
-
-#2001
-to_census01panel$tract_num<-to_census01panel$geouid_21
-to_census01panel$shapearea<-to_census01panel$shapearea_01
-to_census01panel$type<-to_census01panel$type_01
-to_census01panel$households<-to_census01panel$households_01
-to_census01panel$geouid<-to_census01panel$geouid_01
-to_census01panel$cmauid<-to_census01panel$cmauid_01
-to_census01panel$pop<-to_census01panel$pop_01
-to_census01panel$dwellings<-to_census01panel$dwellings_01
-to_census01panel$csd_uid<-to_census01panel$csd_uid_01
-to_census01panel$cd_uid<-to_census01panel$cd_uid_01
-to_census01panel$areasqkm<-to_census01panel$areasqkm_01
-to_census01panel$population<-to_census01panel$population_01
-to_census01panel$totpopsexage<-to_census01panel$totpopsexage_01
-to_census01panel$male<-to_census01panel$male_01
-to_census01panel$female<-to_census01panel$female_01
-to_census01panel$landareasqkm<-to_census01panel$landareasqkm_01
-to_census01panel$totcensusfamilies<-to_census01panel$totcensusfamilies_01
-to_census01panel$loneparent<-to_census01panel$loneparent_01
-to_census01panel$femaleloneparent<-to_census01panel$femaleloneparent_01
-to_census01panel$maleloneparent<-to_census01panel$maleloneparent_01
-to_census01panel$canadiancitizens<-to_census01panel$canadiancitizens_01
-to_census01panel$totpopbycitizenship<-to_census01panel$totpopbycitizenship_01
-to_census01panel$noncanadiancitizens<-to_census01panel$noncanadiancitizens_01
-to_census01panel$totpopplaceofbirth<-to_census01panel$totpopplaceofbirth_01
-to_census01panel$immigrants<-to_census01panel$immigrants_01
-to_census01panel$totaboriginal<-to_census01panel$totaboriginal_01
-to_census01panel$aboriginal<-to_census01panel$aboriginal_01
-to_census01panel$occupieddwellings<-to_census01panel$occupieddwellings_01
-to_census01panel$rented<-to_census01panel$rented_01
-to_census01panel$owned<-to_census01panel$owned_01
-to_census01panel$totvisibleminoritygroups<-to_census01panel$totvisibleminoritygroups_01
-to_census01panel$visibleminority<-to_census01panel$visibleminority_01
-to_census01panel$southasian<-to_census01panel$southasian_01
-to_census01panel$chinese<-to_census01panel$chinese_01
-to_census01panel$black<-to_census01panel$black_01
-to_census01panel$filipino<-to_census01panel$filipino_01
-to_census01panel$arab<-to_census01panel$arab_01
-to_census01panel$latinamerican<-to_census01panel$latinamerican_01
-to_census01panel$southeastasian<-to_census01panel$southeastasian_01
-to_census01panel$westasian<-to_census01panel$westasian_01
-to_census01panel$korean<-to_census01panel$korean_01
-to_census01panel$japanese<-to_census01panel$japanese_01
-to_census01panel$visibleminoritynie<-to_census01panel$visibleminoritynie_01
-to_census01panel$multiplevisminority<-to_census01panel$multiplevisminority_01
-to_census01panel$averagerent<-to_census01panel$averagerent_01
-to_census01panel$averagedwellingvalue<-to_census01panel$averagedwellingvalue_01
-to_census01panel$totmobilitystatus1yrago<-to_census01panel$totmobilitystatus1yrago_01
-to_census01panel$nonmovers1yr<-to_census01panel$nonmovers1yr_01
-to_census01panel$totmobilitystatus5yrago<-to_census01panel$totmobilitystatus5yrago_01
-to_census01panel$movers1yr<-to_census01panel$movers1yr_01
-to_census01panel$nonmovers5yr<-to_census01panel$nonmovers5yr_01
-to_census01panel$movers5yr<-to_census01panel$movers5yr_01
-to_census01panel$age_m_15_19<-to_census01panel$age_m_15_19_01
-to_census01panel$age_m_20_24<-to_census01panel$age_m_20_24_01
-to_census01panel$age_f_15_19<-to_census01panel$age_f_15_19_01
-to_census01panel$age_f_20_24<-to_census01panel$age_f_20_24_01
-to_census01panel$age_m_25_29<-to_census01panel$age_m_25_29_01
-to_census01panel$age_f_25_29<-to_census01panel$age_f_25_29_01
-to_census01panel$totpophighestschooling<-to_census01panel$totpophighestschooling_01
-to_census01panel$bachelorsdegree<-to_census01panel$bachelorsdegree_01
-to_census01panel$highschool<-to_census01panel$highschool_01
-to_census01panel$nodegree<-to_census01panel$nodegree_01
-to_census01panel$totalunemployed<-to_census01panel$totalunemployed_01
-to_census01panel$unemployed_m<-to_census01panel$unemployed_m_01
-to_census01panel$unemployed_f<-to_census01panel$unemployed_f_01
-to_census01panel$totlabourforce<-to_census01panel$totlabourforce_01
-to_census01panel$medianhouseholdincome<-to_census01panel$medianhouseholdincome_01
-to_census01panel$governmenttransfer<-to_census01panel$governmenttransfer_01
-to_census01panel$medianincomeindividuals<-to_census01panel$medianincomeindividual_01
-to_census01panel$medianincomeindividual_m<-to_census01panel$medianincomeindividual_m_01
-to_census01panel$medianincomeindividual_f<-to_census01panel$medianincomeindividual_f_01
-to_census01panel$lowincomeprivhouseholdraw<-to_census01panel$lowincomeprivatehouseholds_01
-to_census01panel$lowincomeprivhouseholdpercent<-to_census01panel$lowincomepercentprivatehouseholds_01
-to_census01panel$geometry<-to_census01panel$geometry
-to_census01panel$year<-2001
-
-
-#2006
-#For 2006 they split the education levels by age so I need to add them to be consistent with previous years
-to_census06panel$highschool_06<-to_census06panel$highschool1524_06+to_census06panel$highschool2564_06+to_census06panel$highschool65plus_06
-
-to_census06panel$nodegree_06<-to_census06panel$nodegree1524_06+to_census06panel$nodegree2564_06+to_census06panel$nodegree65plus_06
-
-to_census06panel$bachelors_06<-to_census06panel$bachelorsdegree1524_06+to_census06panel$bachelorsdegree2564_06+to_census06panel$bachelorsdegree65plus_06
-
-to_census06panel$totpophighestschooling_06<-to_census06panel$totpophighestschooling1524_06+to_census06panel$totpophighestschooling2564_06+to_census06panel$totpophighestschooling65plus_06
-
-#2006
-to_census06panel$tract_num<-to_census06panel$geouid_21
-to_census06panel$shapearea<-to_census06panel$shapearea_06
-to_census06panel$type<-to_census06panel$type_06
-to_census06panel$households<-to_census06panel$households_06
-to_census06panel$geouid<-to_census06panel$geouid_06
-to_census06panel$cmauid<-to_census06panel$cmauid_06
-to_census06panel$pop<-to_census06panel$pop_06
-to_census06panel$dwellings<-to_census06panel$dwellings_06
-to_census06panel$csd_uid<-to_census06panel$csd_uid_06
-to_census06panel$cd_uid<-to_census06panel$cd_uid_06
-to_census06panel$areasqkm<-to_census06panel$areasqkm_06
-to_census06panel$population<-to_census06panel$population_06
-to_census06panel$totpopsexage<-to_census06panel$totpopsexage_06
-to_census06panel$male<-to_census06panel$male_06
-to_census06panel$female<-to_census06panel$female_06
-to_census06panel$landareasqkm<-NA
-to_census06panel$totcensusfamilies<-to_census06panel$totcensusfamilies_06
-to_census06panel$loneparent<-to_census06panel$loneparent_06
-to_census06panel$femaleloneparent<-to_census06panel$femaleloneparent_06
-to_census06panel$maleloneparent<-to_census06panel$maleloneparent_06
-to_census06panel$canadiancitizens<-to_census06panel$canadiancitizens_06
-to_census06panel$totpopbycitizenship<-to_census06panel$totpopbycitizenship_06
-to_census06panel$noncanadiancitizens<-to_census06panel$noncanadiancitizens_06
-to_census06panel$totpopplaceofbirth<-to_census06panel$totpopplaceofbirth_06
-to_census06panel$immigrants<-to_census06panel$immigrants_06
-to_census06panel$totaboriginal<-to_census06panel$totaboriginal_06
-to_census06panel$aboriginal<-to_census06panel$aboriginal_06
-to_census06panel$occupieddwellings<-to_census06panel$totprivdwellingsbytenure_06
-to_census06panel$rented<-to_census06panel$rented_06
-to_census06panel$owned<-to_census06panel$owned_06
-to_census06panel$totvisibleminoritygroups<-to_census06panel$totvisibleminoritygroups_06
-to_census06panel$visibleminority<-to_census06panel$visibleminority_06
-to_census06panel$southasian<-to_census06panel$southasian_06
-to_census06panel$chinese<-to_census06panel$chinese_06
-to_census06panel$black<-to_census06panel$black_06
-to_census06panel$filipino<-to_census06panel$filipino_06
-to_census06panel$arab<-to_census06panel$arab_06
-to_census06panel$latinamerican<-to_census06panel$latinamerican_06
-to_census06panel$southeastasian<-to_census06panel$southeastasian_06
-to_census06panel$westasian<-to_census06panel$westasian_06
-to_census06panel$korean<-to_census06panel$korean_06
-to_census06panel$japanese<-to_census06panel$japanese_06
-to_census06panel$visibleminoritynie<-to_census06panel$visibleminoritynie_06
-to_census06panel$multiplevisminority<-to_census06panel$multiplevisminority_06
-to_census06panel$averagerent<-to_census06panel$averagerent_06
-to_census06panel$averagedwellingvalue<-to_census06panel$averagedwellingvalue_06
-to_census06panel$totmobilitystatus1yrago<-to_census06panel$totmobilitystatus1yrago_06
-to_census06panel$nonmovers1yr<-to_census06panel$nonmovers1yr_06
-to_census06panel$totmobilitystatus5yrago<-to_census06panel$totmobilitystatus5yrago_06
-to_census06panel$movers1yr<-to_census06panel$movers1yr_06
-to_census06panel$nonmovers5yr<-to_census06panel$nonmovers5yr_06
-to_census06panel$movers5yr<-to_census06panel$movers5yr_06
-to_census06panel$age_m_15_19<-to_census06panel$age_m_15_19_06
-to_census06panel$age_m_20_24<-to_census06panel$age_m_20_24_06
-to_census06panel$age_f_15_19<-to_census06panel$age_f_15_19_06
-to_census06panel$age_f_20_24<-to_census06panel$age_f_20_24_06
-to_census06panel$age_m_25_29<-to_census06panel$age_m_25_29_06
-to_census06panel$age_f_25_29<-to_census06panel$age_f_25_29_06
-to_census06panel$totpophighestschooling<-to_census06panel$totpophighestschooling_06
-to_census06panel$bachelorsdegree<-to_census06panel$bachelors_06
-to_census06panel$highschool<-to_census06panel$highschool_06
-to_census06panel$nodegree<-to_census06panel$nodegree_06
-to_census06panel$totalunemployed<-to_census06panel$totalunemployed_06
-to_census06panel$unemployed_m<-to_census06panel$unemployed_m_06
-to_census06panel$unemployed_f<-to_census06panel$unemployed_f_06
-to_census06panel$totlabourforce<-to_census06panel$totlabourforce_06
-to_census06panel$medianhouseholdincome<-to_census06panel$medianhouseholdincome_06
-to_census06panel$governmenttransfer<-to_census06panel$governmenttransfereconomicfam_06
-to_census06panel$medianincomeindividuals<-to_census06panel$medianincomeindividuals_06
-to_census06panel$medianincomeindividual_m<-to_census06panel$medianincomeindividual_m_06
-to_census06panel$medianincomeindividual_f<-to_census06panel$medianincomeindividual_f_06
-to_census06panel$lowincomeprivhouseholdraw<-NA
-to_census06panel$lowincomeprivhouseholdpercent<-to_census06panel$lowincomepercentprivhousehold_06
-to_census06panel$geometry<-to_census06panel$geometry
-to_census06panel$year<-2006
-
-#2011
-names(to_census11panel)
-to_census11panel$tract_num<-to_census11panel$geouid_21
-to_census11panel$shapearea<-to_census11panel$shapearea_11
-to_census11panel$type<-to_census11panel$type_11
-to_census11panel$households<-to_census11panel$households_11
-to_census11panel$geouid<-to_census11panel$geouid_11
-to_census11panel$cmauid<-to_census11panel$cmauid_11
-to_census11panel$pop<-to_census11panel$pop_11
-to_census11panel$dwellings<-to_census11panel$dwellings_11
-to_census11panel$csd_uid<-to_census11panel$csd_uid_11
-to_census11panel$cd_uid<-to_census11panel$cd_uid_11
-to_census11panel$areasqkm<-to_census11panel$areasqkm_11
-to_census11panel$population<-to_census11panel$population_11
-to_census11panel$totpopsexage<-to_census11panel$totpopsexage_11
-to_census11panel$male<-to_census11panel$male_11
-to_census11panel$female<-to_census11panel$female_11
-to_census11panel$landareasqkm<-to_census11panel$landareasqkm_11
-to_census11panel$totcensusfamilies<-to_census11panel$totcensusfamilies_11
-to_census11panel$loneparent<-to_census11panel$loneparent_11
-to_census11panel$femaleloneparent<-to_census11panel$femaleloneparent_11
-to_census11panel$maleloneparent<-to_census11panel$maleloneparent_11
-to_census11panel$canadiancitizens<-to_census11panel$canadiancitizens_11
-to_census11panel$totpopbycitizenship<-to_census11panel$totpopbycitizenship_11
-to_census11panel$noncanadiancitizens<-to_census11panel$noncanadiancitizens_11
-to_census11panel$totpopplaceofbirth<-to_census11panel$totpopplaceofbirth_11
-to_census11panel$immigrants<-to_census11panel$immigrants_11
-to_census11panel$totaboriginal<-to_census11panel$totaboriginal_11
-to_census11panel$aboriginal<-to_census11panel$aboriginal_11
-to_census11panel$occupieddwellings<-to_census11panel$totalprivdwellingsbytenure_11
-to_census11panel$rented<-to_census11panel$rented_11
-to_census11panel$owned<-to_census11panel$owned_11
-to_census11panel$totvisibleminoritygroups<-to_census11panel$totvisibleminoritygroups_11
-to_census11panel$visibleminority<-to_census11panel$visibleminority_11
-to_census11panel$southasian<-to_census11panel$southasian_11
-to_census11panel$chinese<-to_census11panel$chinese_11
-to_census11panel$black<-to_census11panel$black_11
-to_census11panel$filipino<-to_census11panel$filipino_11
-to_census11panel$arab<-to_census11panel$arab_11
-to_census11panel$latinamerican<-to_census11panel$latinamerican_11
-to_census11panel$southeastasian<-to_census11panel$southeastasian_11
-to_census11panel$westasian<-to_census11panel$westasian_11
-to_census11panel$korean<-to_census11panel$korean_11
-to_census11panel$japanese<-to_census11panel$japanese_11
-to_census11panel$visibleminoritynie<-to_census11panel$visibleminoritynie_11
-to_census11panel$multiplevisminority<-to_census11panel$multiplevisminority_11
-to_census11panel$averagerent<-to_census11panel$averagerent_11
-to_census11panel$averagedwellingvalue<-to_census11panel$averagedwellingvalue_11
-to_census11panel$totmobilitystatus1yrago<-to_census11panel$totmobilitystatus1yrago_11
-to_census11panel$nonmovers1yr<-to_census11panel$nonmovers1yr_11
-to_census11panel$totmobilitystatus5yrago<-to_census11panel$totmobilitystatus5yrago_11
-to_census11panel$movers1yr<-to_census11panel$movers1yr_11
-to_census11panel$nonmovers5yr<-to_census11panel$nonmovers5yr_11
-to_census11panel$movers5yr<-to_census11panel$movers5yr_11
-to_census11panel$age_m_15_19<-to_census11panel$age_m_15_19_11
-to_census11panel$age_m_20_24<-to_census11panel$age_m_20_24_11
-to_census11panel$age_f_15_19<-to_census11panel$age_f_15_19_11
-to_census11panel$age_f_20_24<-to_census11panel$age_f_20_24_11
-to_census11panel$age_m_25_29<-to_census11panel$age_m_25_29_11
-to_census11panel$age_f_25_29<-to_census11panel$age_f_25_29_11
-to_census11panel$totpophighestschooling<-to_census11panel$totpophighestschooling_11
-to_census11panel$bachelorsdegree<-to_census11panel$bachelorsdegree_11
-to_census11panel$highschool<-to_census11panel$highschool_11
-to_census11panel$nodegree<-to_census11panel$nodegree_11
-to_census11panel$totalunemployed<-to_census11panel$totalunemployed_11
-to_census11panel$unemployed_m<-to_census11panel$unemployed_m_11
-to_census11panel$unemployed_f<-to_census11panel$unemployed_f_11
-to_census11panel$totlabourforce<-to_census11panel$totlabourforce_11
-to_census11panel$medianhouseholdincome<-to_census11panel$medianhouseholdincome_11
-to_census11panel$governmenttransfer<-to_census11panel$governmenttransfer_11
-to_census11panel$medianincomeindividuals<-to_census11panel$medianincomeindividuals_11
-to_census11panel$medianincomeindividual_m<-to_census11panel$medianincomeindividual_m_11
-to_census11panel$medianincomeindividual_f<-to_census11panel$medianincomeindividual_f_11
-to_census11panel$lowincomeprivhouseholdraw<-to_census11panel$lowincome_11
-to_census11panel$lowincomeprivhouseholdpercent<-to_census11panel$lowincomepercent_11
-to_census11panel$geometry<-to_census11panel$geometry
-to_census11panel$year<-2011
-
-
-#2016
-names(to_census16panel)
-to_census16panel$tract_num<-to_census16panel$geouid_21
-to_census16panel$shapearea<-to_census16panel$shapearea_16
-to_census16panel$type<-to_census16panel$type_16
-to_census16panel$households<-to_census16panel$households_16
-to_census16panel$geouid<-to_census16panel$geouid_16
-to_census16panel$cmauid<-to_census16panel$cmauid_16
-to_census16panel$pop<-to_census16panel$pop_16
-to_census16panel$dwellings<-to_census16panel$dwellings_16
-to_census16panel$csd_uid<-to_census16panel$csd_uid_16
-to_census16panel$cd_uid<-to_census16panel$cd_uid_16
-to_census16panel$areasqkm<-to_census16panel$areasqkm_16
-to_census16panel$population<-to_census16panel$population_16
-to_census16panel$totpopsexage<-to_census16panel$totpopsexage_16
-to_census16panel$male<-to_census16panel$male_16
-to_census16panel$female<-to_census16panel$female_16
-to_census16panel$landareasqkm<-to_census16panel$landareasqkm_16
-to_census16panel$totcensusfamilies<-to_census16panel$totcensusfamilies_16
-to_census16panel$loneparent<-to_census16panel$loneparent_16
-to_census16panel$femaleloneparent<-to_census16panel$femaleloneparent_16
-to_census16panel$maleloneparent<-to_census16panel$maleloneparent_16
-to_census16panel$canadiancitizens<-to_census16panel$canadiancitizens_16
-to_census16panel$totpopbycitizenship<-to_census16panel$totpopbycitizenship_16
-to_census16panel$noncanadiancitizens<-to_census16panel$noncandiancitizens_16
-to_census16panel$totpopplaceofbirth<-to_census16panel$totpopplaceofbirth_16
-to_census16panel$immigrants<-to_census16panel$immigrants_16
-to_census16panel$totaboriginal<-to_census16panel$totaboriginal_16
-to_census16panel$aboriginal<-to_census16panel$aboriginal_16
-to_census16panel$occupieddwellings<-to_census16panel$totprivdwellingsbytenure_16
-to_census16panel$rented<-to_census16panel$rented_16
-to_census16panel$owned<-to_census16panel$owned_16
-to_census16panel$totvisibleminoritygroups<-to_census16panel$totvisibleminoritygroups_16
-to_census16panel$visibleminority<-to_census16panel$visibleminority_16
-to_census16panel$southasian<-to_census16panel$southasian_16
-to_census16panel$chinese<-to_census16panel$chinese_16
-to_census16panel$black<-to_census16panel$black_16
-to_census16panel$filipino<-to_census16panel$filipino_16
-to_census16panel$arab<-to_census16panel$arab_16
-to_census16panel$latinamerican<-to_census16panel$latinamerican_16
-to_census16panel$southeastasian<-to_census16panel$southeastasian_16
-to_census16panel$westasian<-to_census16panel$westasian_16
-to_census16panel$korean<-to_census16panel$korean_16
-to_census16panel$japanese<-to_census16panel$japanese_16
-to_census16panel$visibleminoritynie<-to_census16panel$visibleminoritynie_16
-to_census16panel$multiplevisminority<-to_census16panel$multiplevisminority_16
-to_census16panel$averagerent<-to_census16panel$averagerent_16
-to_census16panel$averagedwellingvalue<-to_census16panel$averagedwellingvalue_16
-to_census16panel$totmobilitystatus1yrago<-to_census16panel$totmobilitystatus1yrago_16
-to_census16panel$nonmovers1yr<-to_census16panel$nonmovers1yr_16
-to_census16panel$totmobilitystatus5yrago<-to_census16panel$totmobilitystatus5yrago_16
-to_census16panel$movers1yr<-to_census16panel$movers1yr_16
-to_census16panel$nonmovers5yr<-to_census16panel$nonmovers5yr_16
-to_census16panel$movers5yr<-to_census16panel$movers5yr_16
-to_census16panel$age_m_15_19<-to_census16panel$age_m_15_19_16
-to_census16panel$age_m_20_24<-to_census16panel$age_m_20_24_16
-to_census16panel$age_f_15_19<-to_census16panel$age_f_15_19_16
-to_census16panel$age_f_20_24<-to_census16panel$age_f_20_24_16
-to_census16panel$age_m_25_29<-to_census16panel$age_m_25_29_16
-to_census16panel$age_f_25_29<-to_census16panel$age_f_25_29_16
-to_census16panel$totpophighestschooling<-to_census16panel$totpophighestschooling_16
-to_census16panel$bachelorsdegree<-to_census16panel$bachelorsdegree_16
-to_census16panel$highschool<-to_census16panel$highschool_16
-to_census16panel$nodegree<-to_census16panel$nodegree_16
-to_census16panel$totalunemployed<-to_census16panel$totalunemployed_16
-to_census16panel$unemployed_m<-to_census16panel$unemployed_m_16
-to_census16panel$unemployed_f<-to_census16panel$unemployed_f_16
-to_census16panel$totlabourforce<-to_census16panel$totlabourforce_16
-to_census16panel$medianhouseholdincome<-to_census16panel$medianhouseholdincome_16
-to_census16panel$governmenttransfer<-to_census16panel$governmenttransfer_16
-to_census16panel$medianincomeindividuals<-to_census16panel$medianincomeindividuals_16
-to_census16panel$medianincomeindividual_m<-to_census16panel$medianincomeindividual_m_16
-to_census16panel$medianincomeindividual_f<-to_census16panel$medianincomeindividual_f_16
-to_census16panel$lowincomeprivhouseholdraw<-to_census16panel$lowincomeLICOAT_16
-to_census16panel$lowincomeprivhouseholdpercent<-to_census16panel$lowincomeLICOATpercent_16
-to_census16panel$geometry<-to_census16panel$geometry
-to_census16panel$year<-2016
-
-#Remove extra columns to make datasets match
-to_census96panel <- to_census96panel[,-c(1:85)] 
-to_census01panel <- to_census01panel[,c(89:162,88)] 
-to_census06panel <- to_census06panel[,c(100:173,95)] 
-to_census11panel <- to_census11panel[,c(88:161,87)] 
-to_census16panel <- to_census16panel[,c(92:165,90)] 
-to_census21panel <- to_census21panel[,c(88:160,87)] 
-
-
-```
-
-### Making Transformations of Variables in my Panel Datasets
-
-```{r}
-#1996
-#% Owners and % Renters
-to_census96panel$per_owners <- to_census96panel$owned/to_census96panel$occupieddwellings*100
-to_census96panel$per_renters <- to_census96panel$rented/to_census96panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census96panel$per_mvd1yr <- to_census96panel$movers1yr/to_census96panel$totmobilitystatus1yrago*100
-to_census96panel$per_mvd5yr <- to_census96panel$movers5yr/to_census96panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars. This is based on the Bank of Canada inflation calculator (1.58)
-to_census96panel$averagerent21dol <- to_census96panel$averagerent * 1.58
-to_census96panel$averagedwellingvalue21dol <- to_census96panel$averagedwellingvalue * 1.58
-
-#% Race
-to_census96panel$per_visminority <- to_census96panel$visibleminority/to_census96panel$totvisibleminoritygroups*100
-to_census96panel$per_black <- to_census96panel$black/to_census96panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census96panel <- to_census96panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census96panel <- to_census96panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census96panel$per_male <- to_census96panel$male / to_census96panel$totpopsexage * 100
-to_census96panel$per_female <- to_census96panel$female /  to_census96panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census96panel$per_ages15_29 <- (to_census96panel$age_m_15_19+
-                                    to_census96panel$age_m_20_24+
-                                     to_census96panel$age_m_25_29+
-                                     to_census96panel$age_f_15_19+
-                                     to_census96panel$age_f_20_24+
-                                     to_census96panel$age_f_25_29) /     to_census96panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census96panel$per_singlefather <- to_census96panel$maleloneparent / to_census96panel$totcensusfamilies * 100
-to_census96panel$per_singlemother <- to_census96panel$femaleloneparent / to_census96panel$totcensusfamilies * 100
-to_census96panel$per_singleparent <- to_census96panel$loneparent / to_census96panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census96panel$per_bachplus <- to_census96panel$bachelorsdegree / to_census96panel$totpophighestschooling * 100
-
-# % unemployed
-to_census96panel$per_unemployed <- to_census96panel$totalunemployed / to_census96panel$totlabourforce * 100
-
-# % immigrants
-to_census96panel$per_immigrants <- to_census96panel$immigrants / to_census96panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars (based on Bank of Canada inflation calculator 01/1996 dollars to 01/2021 dollars = 1.58)
-to_census96panel$medianhouseholdincome_21dol <- to_census96panel$medianhouseholdincome * 1.58
-
-# % govt transfer
-to_census96panel$per_govttransfer <- to_census96panel$governmenttransfer / to_census96panel$population * 100
-
-#2001
-#% Owners and % Renters
-to_census01panel$per_owners <- to_census01panel$owned/to_census01panel$occupieddwellings*100
-to_census01panel$per_renters <- to_census01panel$rented/to_census01panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census01panel$per_mvd1yr <- to_census01panel$movers1yr/to_census01panel$totmobilitystatus1yrago*100
-to_census01panel$per_mvd5yr <- to_census01panel$movers5yr/to_census01panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars. This is based on the Bank of Canada inflation calculator (1.43)
-to_census01panel$averagerent21dol <- to_census01panel$averagerent * 1.43
-to_census01panel$averagedwellingvalue21dol <- to_census01panel$averagedwellingvalue * 1.43
-
-#% Race
-to_census01panel$per_visminority <- to_census01panel$visibleminority/to_census01panel$totvisibleminoritygroups*100
-to_census01panel$per_black <- to_census01panel$black/to_census01panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census01panel <- to_census01panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census01panel <- to_census01panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census01panel$per_male <- to_census01panel$male / to_census01panel$totpopsexage * 100
-to_census01panel$per_female <- to_census01panel$female /  to_census01panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census01panel$per_ages15_29 <- (to_census01panel$age_m_15_19+
-                                    to_census01panel$age_m_20_24+
-                                     to_census01panel$age_m_25_29+
-                                     to_census01panel$age_f_15_19+
-                                     to_census01panel$age_f_20_24+
-                                     to_census01panel$age_f_25_29) /     to_census01panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census01panel$per_singlefather <- to_census01panel$maleloneparent / to_census01panel$totcensusfamilies * 100
-to_census01panel$per_singlemother <- to_census01panel$femaleloneparent / to_census01panel$totcensusfamilies * 100
-to_census01panel$per_singleparent <- to_census01panel$loneparent / to_census01panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census01panel$per_bachplus <- to_census01panel$bachelorsdegree / to_census01panel$totpophighestschooling * 100
-
-# % unemployed
-to_census01panel$per_unemployed <- to_census01panel$totalunemployed / to_census01panel$totlabourforce * 100
-
-# % immigrants
-to_census01panel$per_immigrants <- to_census01panel$immigrants / to_census01panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars (based on Bank of Canada inflation calculator 01/2001 dollars to 01/2021 dollars = 1.43)
-to_census01panel$medianhouseholdincome_21dol <- to_census01panel$medianhouseholdincome * 1.43
-
-# % govt transfer
-to_census01panel$per_govttransfer <- to_census01panel$governmenttransfer / to_census01panel$population * 100
-
-#2006
-#% Owners and % Renters
-to_census06panel$per_owners <- to_census06panel$owned/to_census06panel$occupieddwellings*100
-to_census06panel$per_renters <- to_census06panel$rented/to_census06panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census06panel$per_mvd1yr <- to_census06panel$movers1yr/to_census06panel$totmobilitystatus1yrago*100
-to_census06panel$per_mvd5yr <- to_census06panel$movers5yr/to_census06panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars. This is based on the Bank of Canada inflation calculator (1.29)
-to_census06panel$averagerent21dol <- to_census06panel$averagerent * 1.29
-to_census06panel$averagedwellingvalue21dol <- to_census06panel$averagedwellingvalue * 1.29
-
-#% Race
-to_census06panel$per_visminority <- to_census06panel$visibleminority/to_census06panel$totvisibleminoritygroups*100
-to_census06panel$per_black <- to_census06panel$black/to_census06panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census06panel <- to_census06panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census06panel <- to_census06panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census06panel$per_male <- to_census06panel$male / to_census06panel$totpopsexage * 100
-to_census06panel$per_female <- to_census06panel$female /  to_census06panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census06panel$per_ages15_29 <- (to_census06panel$age_m_15_19+
-                                    to_census06panel$age_m_20_24+
-                                     to_census06panel$age_m_25_29+
-                                     to_census06panel$age_f_15_19+
-                                     to_census06panel$age_f_20_24+
-                                     to_census06panel$age_f_25_29) /     to_census06panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census06panel$per_singlefather <- to_census06panel$maleloneparent / to_census06panel$totcensusfamilies * 100
-to_census06panel$per_singlemother <- to_census06panel$femaleloneparent / to_census06panel$totcensusfamilies * 100
-to_census06panel$per_singleparent <- to_census06panel$loneparent / to_census06panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census06panel$per_bachplus <- to_census06panel$bachelorsdegree / to_census06panel$totpophighestschooling * 100
-
-# % unemployed
-to_census06panel$per_unemployed <- to_census06panel$totalunemployed / to_census06panel$totlabourforce * 100
-
-# % immigrants
-to_census06panel$per_immigrants <- to_census06panel$immigrants / to_census06panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars (based on Bank of Canada inflation calculator 01/2006 dollars to 01/2021 dollars = 1.29)
-to_census06panel$medianhouseholdincome_21dol <- to_census06panel$medianhouseholdincome * 1.29
-
-# % govt transfer
-to_census06panel$per_govttransfer <- to_census06panel$governmenttransfer / to_census06panel$population * 100
-
-#2011
-#% Owners and % Renters
-to_census11panel$per_owners <- to_census11panel$owned/to_census11panel$occupieddwellings*100
-to_census11panel$per_renters <- to_census11panel$rented/to_census11panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census11panel$per_mvd1yr <- to_census11panel$movers1yr/to_census11panel$totmobilitystatus1yrago*100
-to_census11panel$per_mvd5yr <- to_census11panel$movers5yr/to_census11panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars. This is based on the Bank of Canada inflation calculator (1.17)
-to_census11panel$averagerent21dol <- to_census11panel$averagerent * 1.17
-to_census11panel$averagedwellingvalue21dol <- to_census11panel$averagedwellingvalue * 1.17
-
-#% Race
-to_census11panel$per_visminority <- to_census11panel$visibleminority/to_census11panel$totvisibleminoritygroups*100
-to_census11panel$per_black <- to_census11panel$black/to_census11panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census11panel <- to_census11panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census11panel <- to_census11panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census11panel$per_male <- to_census11panel$male / to_census11panel$totpopsexage * 100
-to_census11panel$per_female <- to_census11panel$female /  to_census11panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census11panel$per_ages15_29 <- (to_census11panel$age_m_15_19+
-                                    to_census11panel$age_m_20_24+
-                                     to_census11panel$age_m_25_29+
-                                     to_census11panel$age_f_15_19+
-                                     to_census11panel$age_f_20_24+
-                                     to_census11panel$age_f_25_29) /     to_census11panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census11panel$per_singlefather <- to_census11panel$maleloneparent / to_census11panel$totcensusfamilies * 100
-to_census11panel$per_singlemother <- to_census11panel$femaleloneparent / to_census11panel$totcensusfamilies * 100
-to_census11panel$per_singleparent <- to_census11panel$loneparent / to_census11panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census11panel$per_bachplus <- to_census11panel$bachelorsdegree / to_census11panel$totpophighestschooling * 100
-
-# % unemployed
-to_census11panel$per_unemployed <- to_census11panel$totalunemployed / to_census11panel$totlabourforce * 100
-
-# % immigrants
-to_census11panel$per_immigrants <- to_census11panel$immigrants / to_census11panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars (based on Bank of Canada inflation calculator 01/2006 dollars to 01/2021 dollars = 1.17)
-to_census11panel$medianhouseholdincome_21dol <- to_census11panel$medianhouseholdincome * 1.17
-
-# % govt transfer
-to_census11panel$per_govttransfer <- to_census11panel$governmenttransfer / to_census11panel$population * 100
-
-#2016
-#% Owners and % Renters
-to_census16panel$per_owners <- to_census16panel$owned/to_census16panel$occupieddwellings*100
-to_census16panel$per_renters <- to_census16panel$rented/to_census16panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census16panel$per_mvd1yr <- to_census16panel$movers1yr/to_census16panel$totmobilitystatus1yrago*100
-to_census16panel$per_mvd5yr <- to_census16panel$movers5yr/to_census16panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars. This is based on the Bank of Canada inflation calculator (1.09)
-to_census16panel$averagerent21dol <- to_census16panel$averagerent * 1.09
-to_census16panel$averagedwellingvalue21dol <- to_census16panel$averagedwellingvalue * 1.09
-
-#% Race
-to_census16panel$per_visminority <- to_census16panel$visibleminority/to_census16panel$totvisibleminoritygroups*100
-to_census16panel$per_black <- to_census16panel$black/to_census16panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census16panel <- to_census16panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census16panel <- to_census16panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census16panel$per_male <- to_census16panel$male / to_census16panel$totpopsexage * 100
-to_census16panel$per_female <- to_census16panel$female /  to_census16panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census16panel$per_ages15_29 <- (to_census16panel$age_m_15_19+
-                                    to_census16panel$age_m_20_24+
-                                     to_census16panel$age_m_25_29+
-                                     to_census16panel$age_f_15_19+
-                                     to_census16panel$age_f_20_24+
-                                     to_census16panel$age_f_25_29) /     to_census16panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census16panel$per_singlefather <- to_census16panel$maleloneparent / to_census16panel$totcensusfamilies * 100
-to_census16panel$per_singlemother <- to_census16panel$femaleloneparent / to_census16panel$totcensusfamilies * 100
-to_census16panel$per_singleparent <- to_census16panel$loneparent / to_census16panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census16panel$per_bachplus <- to_census16panel$bachelorsdegree / to_census16panel$totpophighestschooling * 100
-
-# % unemployed
-to_census16panel$per_unemployed <- to_census16panel$totalunemployed / to_census16panel$totlabourforce * 100
-
-# % immigrants
-to_census16panel$per_immigrants <- to_census16panel$immigrants / to_census16panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars (based on Bank of Canada inflation calculator 01/2016 dollars to 01/2021 dollars = 1.09)
-to_census16panel$medianhouseholdincome_21dol <- to_census16panel$medianhouseholdincome * 1.09
-
-# % govt transfer
-to_census16panel$per_govttransfer <- to_census16panel$governmenttransfer / to_census16panel$population * 100
-
-#2021
-#% Owners and % Renters
-to_census21panel$per_owners <- to_census21panel$owned/to_census21panel$occupieddwellings*100
-to_census21panel$per_renters <- to_census21panel$rented/to_census21panel$occupieddwellings*100
-
-#% Moved in past 1 or 5 years
-to_census21panel$per_mvd1yr <- to_census21panel$movers1yr/to_census21panel$totmobilitystatus1yrago*100
-to_census21panel$per_mvd5yr <- to_census21panel$movers5yr/to_census21panel$totmobilitystatus5yrago*100
-
-#Rent and home values based on 2021 dollars.
-to_census21panel$averagerent21dol <- to_census21panel$averagerent
-to_census21panel$averagedwellingvalue21dol <- to_census21panel$averagedwellingvalue
-
-#% Race
-to_census21panel$per_visminority <- to_census21panel$visibleminority/to_census21panel$totvisibleminoritygroups*100
-to_census21panel$per_black <- to_census21panel$black/to_census21panel$totvisibleminoritygroups*100
-
-#Make percent asian combined variable
-cols_to_sum <- c("southasian", "chinese", "filipino", "westasian", "korean", "japanese")
-
-# Summarize the data, treating NAs as zeros
-to_census21panel <- to_census21panel %>%
-  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
-  rowwise() %>%
-  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
-
-to_census21panel <- to_census21panel %>%
-  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
-
-#% gender
-to_census21panel$per_male <- to_census21panel$male / to_census21panel$totpopsexage * 100
-to_census21panel$per_female <- to_census21panel$female /  to_census21panel$totpopsexage * 100
-
-# % age peak crime years 
-to_census21panel$per_ages15_29 <- (to_census21panel$age_m_15_19+
-                                    to_census21panel$age_m_20_24+
-                                     to_census21panel$age_m_25_29+
-                                     to_census21panel$age_f_15_19+
-                                     to_census21panel$age_f_20_24+
-                                     to_census21panel$age_f_25_29) /     to_census21panel$totpopsexage * 100
-
-# % single fathers and mothers 
-to_census21panel$per_singlefather <- to_census21panel$maleloneparent / to_census21panel$totcensusfamilies * 100
-to_census21panel$per_singlemother <- to_census21panel$femaleloneparent / to_census21panel$totcensusfamilies * 100
-to_census21panel$per_singleparent <- to_census21panel$loneparent / to_census21panel$totcensusfamilies * 100
-
-# % population with bachelors or higher
-to_census21panel$per_bachplus <- to_census21panel$bachelorsdegree / to_census21panel$totpophighestschooling * 100
-
-# % unemployed
-to_census21panel$per_unemployed <- to_census21panel$totalunemployed / to_census21panel$totlabourforce * 100
-
-# % immigrants
-to_census21panel$per_immigrants <- to_census21panel$immigrants / to_census21panel$totpopplaceofbirth * 100
-
-# median household income in 2021 dollars
-to_census21panel$medianhouseholdincome_21dol <- to_census21panel$medianhouseholdincome
-
-#Add geouid column to 2021 panel I am missing it
-to_census21panel$geouid<-to_census21panel$tract_num
-
-# % govt transfer
-to_census21panel$per_govttransfer <- to_census21panel$governmenttransfer / to_census21panel$population * 100
-
-#Row bind to make panel data set
-to_census_panel <- rbind(to_census96panel, to_census01panel, to_census06panel, to_census11panel, to_census16panel,to_census21panel)
-
-#Move year column up
-names(to_census_panel)
-to_census_panel<-to_census_panel[,c(1,74,2:73,75:96)]
-
-#Remove a ton of extra datasets
-rm(to_census_full)
-rm(to_census01)
-rm(to_census96)
-rm(to_census06)
-rm(to_census11)
-rm(to_census16)
-rm(to_census21)
-rm(to_census21panel)
-rm(to_census16panel)
-rm(to_census11panel)
-rm(to_census06panel)
-rm(to_census01panel)
-rm(to_census96panel)
-rm(to_census21panel)
-rm(to_census1)
-rm(to_census2)
-rm(to_census3)
-rm(to_census4)
-rm(to_census5)
-
-```
-
-## INTERPOLATIONS
-
-```{r}
-#Okay here I am first calculating the percent of missing tracts for each year that I will need to interpolate. I am doing this for columns 13:92, those are the most important.
-library(zoo)
-missing_percentage_by_year <- sapply(unique(to_census_panel$year), function(year) {
-  subset_data <- to_census_panel[to_census_panel$year == year, 13:96]
-  total_tracts <- nrow(subset_data)
-  missing_values <- sum(is.na(subset_data))
-  percentage_missing <- (missing_values / (total_tracts * (96 - 13 + 1))) * 100
-  return(percentage_missing)
-})
-
-# Display the missing percentage for each year: 1.36 1.06 3.56 0.76 0.31 0.24
-print(missing_percentage_by_year)
-
-#New dataset for interpolations
-to_census_panel_interp <- to_census_panel
-
-# Convert the 'to_census_panel_interp' data frame to a data frame and drop the 'geometry' column
-to_census_panel_interp <- as.data.frame(to_census_panel_interp)
-to_census_panel_interp <- to_census_panel_interp %>%
-  select(-geometry)
-
-# Define the columns to interpolate (columns 3 to 96)
-columns_to_interpolate <- 3:94
-
-# Function to interpolate a single column
-interpolate_column <- function(x) {
-  if (sum(is.na(x)) > 2) {
-    return(x)  # If more than 2 NAs, leave it as is
-  } else {
-    non_na_count <- sum(!is.na(x))
-    if (non_na_count >= 2) {
-      return(approx(seq_along(x), x, xout = seq_along(x), method = "linear")$y)
-      # Interpolate NAs using linear interpolation if at least 2 non-NAs are present
-    } else {
-      return(x)  # If less than 2 non-NAs, leave it as is
-    }
-  }
-}
-
-# Apply the interpolation function to the selected columns within each tract
-to_census_panel_interp <- to_census_panel_interp %>%
-  group_by(tract_num) %>%
-  mutate(across(all_of(columns_to_interpolate), interpolate_column)) %>%
-  ungroup()
-
-
-# Define the tract numbers to drop
-tracts_to_drop <- c("5350003.00", "5350009.00", "5350006.00")
-
-# Filter out the rows with the specified tract numbers
-to_census_panel_filtered <- to_census_panel_interp %>%
-  filter(!tract_num %in% tracts_to_drop)
-
-# Define the columns to interpolate/extrapolate (columns 3 to 94)
-columns_to_interpolate <- 3:94
-
-# Function to perform linear interpolation/extrapolation for a column within each tract
-interpolate_extrapolate_column <- function(x) {
-  if (sum(!is.na(x)) < 2) {
-    return(x)  # If less than 2 non-NA values, leave it as is
-  }
-  if (any(is.na(x))) {
-    x <- na.approx(x, method = "linear", rule = 2)  # Interpolate/extrapolate NAs using linear interpolation/extrapolation
-  }
-  return(x)
-}
-
-# Loop through each column and apply the interpolation/extrapolation function within each tract
-for (col_index in columns_to_interpolate) {
-  col_name <- colnames(to_census_panel_filtered)[col_index]
-  to_census_panel_filtered <- to_census_panel_filtered %>%
-    group_by(tract_num) %>%
-    mutate(!!col_name := interpolate_extrapolate_column(!!sym(col_name))) %>%
-    ungroup()
-}
-
-# Find the number of unique tracts
-unique_tracts <- unique(to_census_panel_filtered$tract_num)
-num_unique_tracts <- length(unique_tracts)
-
-# Print the number of unique tracts
-cat("Number of unique tracts:", num_unique_tracts, "\n")
-
-# Define the tract and year to replace values
-tract_to_replace <- "5350378.03"
-year_to_replace <- 2016
-
-# Define the columns to replace with NA values
-columns_to_replace <- c(3, 5, 8, 9, 12:94)
-
-# Find the rows that match the tract and year
-rows_to_replace <- which(to_census_panel_filtered$tract_num == tract_to_replace & to_census_panel_filtered$year == year_to_replace)
-
-# Replace the specified columns with NA values for the selected rows
-to_census_panel_filtered[rows_to_replace, columns_to_replace] <- NA
-
-# Specify the tract and year to interpolate/extrapolate
-tract_to_interpolate <- "5350378.03"
-year_to_interpolate <- 2016
-
-# List of column names to interpolate/extrapolate
-columns_to_interpolate <- c(3, 5, 8, 9, 12:94)
-
-# Create a copy of the dataset for manipulation
-interpolated_data <- to_census_panel_filtered
-
-# Find the row index for the specified tract and year
-row_index <- which(interpolated_data$tract_num == tract_to_interpolate & interpolated_data$year == year_to_interpolate)
-
-# Loop through each column and perform linear interpolation/extrapolation
-for (col_name in columns_to_interpolate) {
-  x_values <- interpolated_data$year[!is.na(interpolated_data[, col_name])]
-  y_values <- interpolated_data[, col_name][!is.na(interpolated_data[, col_name])]
+# Create a function to remove columns ending with `_21` except `geouid_21`
+remove_columns_21 <- function(df) {
+  # Identify all columns that end with '_21' except 'geouid_21'
+  columns_to_remove <- colnames(df) %>%
+    # Filter columns that end with '_21' and not equal to 'geouid_21'
+    purrr::keep(~ grepl("_21$", .x) & .x != "geouid_21")
   
-  if (length(x_values) >= 2) {
-    interpolated_value <- approx(
-      x = x_values,
-      y = y_values,
-      xout = year_to_interpolate,
-      method = "linear")$y
+  # Remove the identified columns
+  df <- df %>% select(-all_of(columns_to_remove))
+  
+  return(df)
+}
+
+# Apply the function to all dataframes except to_census21
+to_census1 <- remove_columns_21(to_census1)
+to_census2 <- remove_columns_21(to_census2)
+to_census3 <- remove_columns_21(to_census3)
+to_census4 <- remove_columns_21(to_census4)
+to_census5 <- remove_columns_21(to_census5)
+
+# Add year column to each dataframe
+to_census1$year <- 1996
+to_census2$year <- 2001
+to_census3$year <- 2006
+to_census4$year <- 2011
+to_census5$year <- 2016
+to_census21$year <- 2021
+
+# Create a function to rename columns by removing suffixes
+rename_columns <- function(df, suffix) {
+  colnames(df) <- sub(paste0("_", suffix, "$"), "", colnames(df))
+  df
+}
+
+# Apply the function to each dataframe
+to_census1 <- rename_columns(to_census1, "96")
+to_census2 <- rename_columns(to_census2, "01")
+to_census3 <- rename_columns(to_census3, "06")
+to_census4 <- rename_columns(to_census4, "11")
+to_census5 <- rename_columns(to_census5, "16")
+to_census21 <- rename_columns(to_census21, "21")
+
+#Before cleaning up the renaming, for some reason in 2006, they split the education levels by age so I need to add them to be consistent with previous years
+to_census3$highschool<-to_census3$highschool1524+to_census3$highschool2564+to_census3$highschool65plus
+
+to_census3$nodegree<-to_census3$nodegree1524+to_census3$nodegree2564+to_census3$nodegree65plus
+
+to_census3$bachelorsdegree<-to_census3$bachelorsdegree1524+to_census3$bachelorsdegree2564+to_census3$bachelorsdegree65plus+to_census3$higherthanbachelors1524+to_census3$higherthanbachelors2564+to_census3$higherthanbachelors65plus
+
+to_census3$totpophighestschooling<-to_census3$totpophighestschooling1524+to_census3$totpophighestschooling2564+to_census3$totpophighestschooling65plus
+
+# Delete the original columns
+columns_to_delete <- c(
+  "highschool1524", 
+  "highschool2564",
+  "highschool65plus",
+  "nodegree1524", 
+  "nodegree2564",
+  "nodegree65plus",
+  "bachelorsdegree1524",
+  "bachelorsdegree2564",
+  "bachelorsdegree65plus",
+  "higherthanbachelors65plus",
+  "higherthanbachelors1524",
+  "higherthanbachelors2564",
+  "totpophighestschooling1524",
+  "totpophighestschooling2564",
+  "totpophighestschooling65plus"
+)
+
+# Remove the columns from the dataframe
+to_census3 <- to_census3[, !(colnames(to_census3) %in% columns_to_delete)]
+
+#The names of columns are still messy so here is some individual renaming that needs to be done to get the dataset columsn to match in name.
+
+# Deleting columns and renaming in `to_census1`
+to_census1 <- st_set_agr(to_census1, "constant")
+to_census1 <- subset(to_census1, select = -c(lowincomepercentunattached, lowincomepercenteconomicfam, lowincomeunattached, unemploymentrate_m, unemploymentrate_f, totalunemploymentrate, adjustedpop, lowincomeeconomicfam, landareasqkm))
+to_census1 <- rename(to_census1, lowincomeprivhouseholdsraw = lowincomeprivatehouseholds)
+to_census1 <- rename(to_census1, medianincomeindividuals = medianincomeindividual)
+to_census1 <- rename(to_census1, lowincomeprivhouseholdpercent = lowincomepercentprivatehouseholds)
+
+#Deleting and renaming in 'to_census2'
+to_census2 <- st_set_agr(to_census2, "constant")
+to_census2 <- subset(to_census2, select = -c(occupieddwellings_01.1, lowincomeunattached, lowincomeeconomicfam, adjustedpop, westasian, lowincomepercenteconomicfam, lowincomepercentunattached,totalunemploymentrate, unemploymentrate_m, unemploymentrate_f, landareasqkm))
+to_census2 <- rename(to_census2, medianincomeindividuals = medianincomeindividual)
+to_census2 <- rename(to_census2, lowincomeprivhouseholdsraw = lowincomeprivatehouseholds)
+to_census2 <- rename(to_census2, lowincomeprivhouseholdpercent = lowincomepercentprivatehouseholds)
+
+# Deleting and renaming in `to_census3`
+to_census3 <- st_set_agr(to_census3, "constant")
+to_census3 <- subset(to_census3, select = -c(governmenttransferindividuals,totprivdwellingsbytenure, westasian, lowincomepercenteconomicfam, lowincomepercentunattached, totalunemploymentrate, unemploymentrate_m, unemploymentrate_f))
+to_census3 <- rename(to_census3, lowincomeprivhouseholdpercent = lowincomepercentprivhousehold)
+to_census3 <- rename(to_census3, governmenttransfer = governmenttransfereconomicfam)
+to_census3$lowincomeprivhouseholdsraw <- NA
+
+# Deleting columns and renaming in `to_census4`
+to_census4 <- st_set_agr(to_census4, "constant")
+to_census4 <- subset(to_census4, select = -c(age1519, age2024, age2529, westasian, landareasqkm, totalunemploymentrate, unemploymentrate_m, unemploymentrate_f))
+to_census4 <- rename(to_census4, lowincomeprivhouseholdsraw = lowincome)
+to_census4 <- rename(to_census4, lowincomeprivhouseholdpercent = lowincomepercent)
+to_census4 <- rename(to_census4, occupieddwellings = totalprivdwellingsbytenure)
+
+# Renaming in `to_census5`
+to_census5 <- st_set_agr(to_census5, "constant")
+to_census5 <- subset(to_census5, select = -c(popdensity, adjustedpop, age1519, age2024, age2529, westasian, lowincomeLIMATpercent, lowincomeLIMAT, landareasqkm, totalunemploymentrate, unemploymentrate_m, unemploymentrate_f))
+to_census5 <- rename(to_census5, occupieddwellings = totprivdwellingsbytenure)
+to_census5 <- rename(to_census5, noncanadiancitizens = noncandiancitizens)
+to_census5 <- rename(to_census5, lowincomeprivhouseholdsraw = lowincomeLICOAT)
+to_census5 <- rename(to_census5, lowincomeprivhouseholdpercent = lowincomeLICOATpercent)
+
+# Renaming in `to_census21`
+to_census21 <- st_set_agr(to_census21, "constant")
+to_census21 <- subset(to_census21, select = -c(type, flags, dwellings__16, name, cmauid, houeholds_16, csd_uid, pop_16, cd_uid, region_name, totprivdwellingsbyroom, westasian, age1519, age2024, age2529, tract_num, lowincomeLIMATpercent, lowincomeLIMAT, landareasqkm))
+to_census21 <- rename(to_census21, noncanadiancitizens = noncandiancitizens)
+to_census21 <- rename(to_census21, totaboriginal = totindigenous)
+to_census21 <- rename(to_census21, aboriginal = indigenous)
+to_census21 <- rename(to_census21, lowincomeprivhouseholdsraw = lowincomeLICOAT)
+to_census21 <- rename(to_census21, lowincomeprivhouseholdpercent = lowincomeLICOATpercent)
+to_census21 <- rename(to_census21, occupieddwellings = totprivdwellingsbytenure)
+to_census21 <- rename(to_census21, geouid_21 = geouid)
+
+# Function to find mismatched columns between two dataframes
+find_mismatched_columns <- function(df1, df2) {
+  mismatched_df1_to_df2 <- setdiff(colnames(df1), colnames(df2))
+  mismatched_df2_to_df1 <- setdiff(colnames(df2), colnames(df1))
+  
+  list(
+    df1_extra_columns = mismatched_df1_to_df2,
+    df2_extra_columns = mismatched_df2_to_df1
+  )
+}
+
+# Compare column names across dataframes and print mismatched columns
+mismatches_1_2 <- find_mismatched_columns(to_census1, to_census2)
+mismatches_1_3 <- find_mismatched_columns(to_census1, to_census3)
+mismatches_1_4 <- find_mismatched_columns(to_census1, to_census4)
+mismatches_1_5 <- find_mismatched_columns(to_census1, to_census5)
+mismatches_1_21 <- find_mismatched_columns(to_census1, to_census21)
+
+mismatches_2_3 <- find_mismatched_columns(to_census2, to_census3)
+mismatches_2_4 <- find_mismatched_columns(to_census2, to_census4)
+mismatches_2_5 <- find_mismatched_columns(to_census2, to_census5)
+mismatches_2_21 <- find_mismatched_columns(to_census2, to_census21)
+
+mismatches_3_4 <- find_mismatched_columns(to_census3, to_census4)
+mismatches_3_5 <- find_mismatched_columns(to_census3, to_census5)
+mismatches_3_21 <- find_mismatched_columns(to_census3, to_census21)
+
+mismatches_4_5 <- find_mismatched_columns(to_census4, to_census5)
+mismatches_4_21 <- find_mismatched_columns(to_census4, to_census21)
+
+mismatches_5_21 <- find_mismatched_columns(to_census5, to_census21)
+
+# Print mismatched columns for each pair of dataframes
+print("Mismatched columns between to_census1 and to_census2:")
+print(mismatches_1_2)
+
+print("Mismatched columns between to_census1 and to_census3:")
+print(mismatches_1_3)
+
+print("Mismatched columns between to_census1 and to_census4:")
+print(mismatches_1_4)
+
+print("Mismatched columns between to_census1 and to_census5:")
+print(mismatches_1_5)
+
+print("Mismatched columns between to_census1 and to_census21:")
+print(mismatches_1_21)
+
+print("Mismatched columns between to_census2 and to_census3:")
+print(mismatches_2_3)
+
+print("Mismatched columns between to_census2 and to_census4:")
+print(mismatches_2_4)
+
+print("Mismatched columns between to_census2 and to_census5:")
+print(mismatches_2_5)
+
+print("Mismatched columns between to_census2 and to_census21:")
+print(mismatches_2_21)
+
+print("Mismatched columns between to_census3 and to_census4:")
+print(mismatches_3_4)
+
+print("Mismatched columns between to_census3 and to_census5:")
+print(mismatches_3_5)
+
+print("Mismatched columns between to_census3 and to_census21:")
+print(mismatches_3_21)
+
+print("Mismatched columns between to_census4 and to_census5:")
+print(mismatches_4_5)
+
+print("Mismatched columns between to_census4 and to_census21:")
+print(mismatches_4_21)
+
+print("Mismatched columns between to_census5 and to_census21:")
+print(mismatches_5_21)
+
+# Combine all dataframes into a single panel dataset
+panel_data <- bind_rows(to_census1, to_census2, to_census3, to_census4, to_census5, to_census21)
+
+# Get the list of all objects in the environment
+all_objects <- ls()
+
+# Remove everything that is not 'panel_data' from the environment
+rm(list = setdiff(all_objects, "panel_data"))
+
+```
+
+## Check Missing
+
+Inspect all the missing and how many columns are missing in each. After running the command below there are about 21 tracts of the 3492 with at least one missing value (about 0.6%). I dropped three tracts here with missings across the years.
+
+```{r}
+# Drop the column 'lowincomeprivhouseholdsraw' from panel_data since there are so many missings
+panel_data <- subset(panel_data, select = -lowincomeprivhouseholdsraw)
+
+# Drop specified tracts I know are missing
+tracts_to_drop <- c("5350006.00", "5350003.00", "5350009.00")
+
+# Remove rows with geouid_21 values in tracts_to_drop
+panel_data_filtered <- subset(panel_data, !(geouid_21 %in% tracts_to_drop))
+
+# Create a list to store the results
+results <- list()
+
+# Loop through each row in panel_data_filtered
+for (i in seq_len(nrow(panel_data_filtered))) {
+  # Check if the row has missing values
+  missing_vars <- names(panel_data_filtered)[which(is.na(panel_data_filtered[i, ]))]
+  
+  # If the row has missing values, add to results list
+  if (length(missing_vars) > 0) {
+    # Extract year and geouid_21 from the current row
+    year <- panel_data_filtered$year[i]
+    geouid_21 <- panel_data_filtered$geouid_21[i]
     
-    interpolated_data[row_index, col_name] <- interpolated_value
+    # Add the results to the list
+    results[[length(results) + 1]] <- data.frame(
+      year = year,
+      geouid_21 = geouid_21,
+      missing_vars = paste(missing_vars, collapse = ", ")
+    )
   }
 }
 
-# Replace the original dataset with the updated data
-to_census_panel_filtered <- interpolated_data
-
-rm(to_census_panel_interp)
-rm(interpolated_data)
-```
-
-## DESCRIPTIVES
-
-```{r}
-
-
-
-to_census_panel_filtered$per_visminority <- ifelse(round(to_census_panel_filtered$per_visminority, 2) == 101.35, 100, to_census_panel_filtered$per_visminority)
-
-to_census_panel_filtered$per_indigenous<-(to_census_panel_filtered$aboriginal/to_census_panel_filtered$totaboriginal)*100
-
-to_census_panel_filtered$per_immigrant <-(to_census_panel_filtered$immigrants/to_census_panel_filtered$totpopplaceofbirth)*100
-
-to_census_panel_filtered$per_white <- ((to_census_panel_filtered$totvisibleminoritygroups - to_census_panel_filtered$visibleminority) / to_census_panel_filtered$totvisibleminoritygroups) * 100
-
-to_census_panel_filtered$per_white <- ifelse(round(to_census_panel_filtered$per_white, 3) == -1.351, 0, to_census_panel_filtered$per_white)
-
-to_census_panel_filtered$per_govttransfer <- to_census_panel_filtered$governmenttransfer
-
-to_census_panel_filtered$per_nodegree <-(to_census_panel_filtered$nodegree/to_census_panel_filtered$totpophighestschooling)*100
-
-options(digits=7)
-sd(to_census_panel_filtered$per_unemployed[to_census_panel_filtered$year==1996])
-
-names(to_census_panel_filtered)
-
-to_census_panel_filtered <- to_census_panel_filtered %>%
-  select(-governmenttransfer)
-
-summary(to_census_panel_filtered$per_bachplus[to_census_panel_filtered$year==2006])
-
-
-# Define the tract numbers to drop
-tracts_to_drop <- c("5350003.00", "5350009.00", "5350006.00")
-
-# Filter out the rows with the specified tract numbers
-to_census_panel <- to_census_panel%>%
-  filter(!tract_num %in% tracts_to_drop)
-
-
-interpolated_data$geometry <- to_census_panel_filtered_sf$geometry
-
-# Convert to an sf object
-to_census_panel_filtered_sf <- st_as_sf(to_census_panel_filtered_sf)
-
-
-
+# Combine all results into a data frame
+df_missing <- do.call(rbind, results)
 
 ```
 
-## Save Panel CSV
+## Deal with Missing
+
+For the few missing here I am using spatial interpolation, Inverse Distance Weighting. The technique is based on the assumption that tracts closer to the unmeasured location have a greater influence on the estimated value than points farther away.For each variable, I identify rows with missing values (NA) using the is.na() function. The rows without missing values are filtered out and used as input data. The IDW interpolation is performed using the measured data (data_year_filtered) and the parameters nmax and idp. Nmax = 5 uses 5 nearest census tracts. By limiting the number of neighbors to 5, I am focusing the interpolation on a small set of the closest points to the location being estimated.
+
+
 
 ```{r}
-#Save Panel CSV with geometry column
-st_write(to_census_panel_filtered_sf, "to_census_panel_filtered_sf.geojson")
+library(gstat)
+library(sp)
 
-#Save CSV without geometry column
-write.csv(to_census_panel_filtered, file = "to_census_panel_filtered_df.csv", row.names = FALSE)
+# Parameters for IDW interpolation
+nmax <- 5  # Number of nearest neighbors to consider
+idp <- 2   # Power parameter for inverse distance weighting
+
+# Get the list of all column names (variables) in the data frame
+variable_names <- names(panel_data_filtered)
+
+# Iterate over each year
+for (year in unique(panel_data_filtered$year)) {
+    # Filter data for the current year
+    data_year <- subset(panel_data_filtered, year == panel_data_filtered$year)
+    
+    # Iterate over each variable
+    for (variable in variable_names) {
+        # Skip non-numeric columns like 'year' and 'geouid_21' if necessary
+        if (variable == "year" || variable == "geouid_21") {
+            next
+        }
+        
+        # Filter missing values for the current variable in the current year
+        missing_indices <- is.na(data_year[[variable]])
+        
+        # Filter out rows with missing values in the current variable
+        data_year_filtered <- data_year[!missing_indices, ]
+        
+        # Create gstat object for IDW interpolation using filtered data
+        gs <- gstat::gstat(formula = as.formula(paste(variable, "~ 1")),
+                           data = data_year_filtered,
+                           nmax = nmax,
+                           set = list(idp = idp))
+        
+        # Perform IDW interpolation using the original data for the current year
+        predictions <- predict(gs, newdata = data_year)
+        
+        # Update missing values in the original data for the current variable and year
+        panel_data_filtered[[variable]][missing_indices] <- predictions$var1.pred[missing_indices]
+    }
+}
+
+#Save to directory
+st_write(panel_data_filtered, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_6year.geojson")
 
 
 ```
