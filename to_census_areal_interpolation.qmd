@@ -2064,8 +2064,6 @@ df_missing <- do.call(rbind, results)
 
 For the few missing here I am using spatial interpolation, Inverse Distance Weighting. The technique is based on the assumption that tracts closer to the unmeasured location have a greater influence on the estimated value than points farther away.For each variable, I identify rows with missing values (NA) using the is.na() function. The rows without missing values are filtered out and used as input data. The IDW interpolation is performed using the measured data (data_year_filtered) and the parameters nmax and idp. Nmax = 5 uses 5 nearest census tracts. By limiting the number of neighbors to 5, I am focusing the interpolation on a small set of the closest points to the location being estimated.
 
-
-
 ```{r}
 library(gstat)
 library(sp)
@@ -2109,8 +2107,135 @@ for (year in unique(panel_data_filtered$year)) {
     }
 }
 
+```
+## Variable Transformations, Creating Percentage Variables, and Reordering Columns
+
+```{r}
+#% Owners and % Renters
+panel_data_filtered$per_owners <- panel_data_filtered$owned/panel_data_filtered$occupieddwellings*100
+panel_data_filtered$per_renters <- panel_data_filtered$rented/panel_data_filtered$occupieddwellings*100
+
+#% Moved in past 1 or 5 years
+panel_data_filtered$per_mvd1yr <- panel_data_filtered$movers1yr/panel_data_filtered$totmobilitystatus1yrago*100
+panel_data_filtered$per_mvd5yr <- panel_data_filtered$movers5yr/panel_data_filtered$totmobilitystatus5yrago*100
+
+#% Race
+panel_data_filtered$per_visminority <- panel_data_filtered$visibleminority/panel_data_filtered$totvisibleminoritygroups*100
+panel_data_filtered$per_black <- panel_data_filtered$black/panel_data_filtered$totvisibleminoritygroups*100
+
+#Make percent asian combined variable
+cols_to_sum <- c("southasian", "chinese", "filipino", "korean", "japanese")
+
+# Summarize the data, treating NAs as zeros
+panel_data_filtered <- panel_data_filtered %>%
+  mutate(across(all_of(cols_to_sum), ~ifelse(is.na(.), 0, .))) %>%
+  rowwise() %>%
+  mutate(asian_combined = sum(c_across(cols_to_sum), na.rm = TRUE))
+
+panel_data_filtered <- panel_data_filtered %>%
+  mutate(per_asian = (asian_combined / totvisibleminoritygroups) * 100)
+
+#% gender
+panel_data_filtered$per_male <- panel_data_filtered$male / panel_data_filtered$totpopsexage * 100
+panel_data_filtered$per_female <- panel_data_filtered$female /  panel_data_filtered$totpopsexage * 100
+
+# % age peak crime years 
+panel_data_filtered$per_ages15_29 <- (panel_data_filtered$age_m_15_19+
+                                     panel_data_filtered$age_m_20_24+
+                                     panel_data_filtered$age_m_25_29+
+                                     panel_data_filtered$age_f_15_19+
+                                     panel_data_filtered$age_f_20_24+
+                                     panel_data_filtered$age_f_25_29) /     panel_data_filtered$totpopsexage * 100
+
+# % single fathers and mothers 
+panel_data_filtered$per_singlefather <- panel_data_filtered$maleloneparent / panel_data_filtered$totcensusfamilies * 100
+panel_data_filtered$per_singlemother <- panel_data_filtered$femaleloneparent / panel_data_filtered$totcensusfamilies * 100
+panel_data_filtered$per_singleparent <- panel_data_filtered$loneparent / panel_data_filtered$totcensusfamilies * 100
+
+# % population with bachelors or higher
+panel_data_filtered$per_bachplus <- panel_data_filtered$bachelorsdegree / panel_data_filtered$totpophighestschooling * 100
+
+# % unemployed
+panel_data_filtered$per_unemployed <- panel_data_filtered$totalunemployed / panel_data_filtered$totlabourforce * 100
+
+# % immigrants
+panel_data_filtered$per_immigrants <- panel_data_filtered$immigrants / panel_data_filtered$totpopplaceofbirth * 100
+
+# median household income and average rent in 2021 dollars (based on Bank of Canada inflation calculator to 01/2021 dollars)
+# Apply conversions based on the year
+panel_data_filtered <- panel_data_filtered %>%
+  mutate(
+    averagerent21dol = case_when(
+      year == 1996 ~ averagerent * 1.58,
+      year == 2001 ~ averagerent * 1.43,
+      year == 2006 ~ averagerent * 1.29,
+      year == 2011 ~ averagerent * 1.17,
+       year == 2016 ~ averagerent * 1.09,
+      year == 2021 ~ averagerent, # Use the original value for year 2021
+      TRUE ~ NA_real_
+    ),
+    averagedwellingvalue21dol = case_when(
+      year == 1996 ~ averagedwellingvalue * 1.58,
+      year == 2001 ~ averagedwellingvalue * 1.43,
+      year == 2006 ~ averagedwellingvalue * 1.29,
+      year == 2011 ~ averagedwellingvalue * 1.17,
+       year == 2016 ~ averagedwellingvalue * 1.09,
+      year == 2021 ~ averagedwellingvalue, # Use the original value for year 2021
+      TRUE ~ NA_real_
+    ),
+    medianhouseholdincome_21dol = case_when(
+      year == 1996 ~ medianhouseholdincome * 1.58,
+      year == 2001 ~ medianhouseholdincome * 1.43,
+      year == 2006 ~ medianhouseholdincome * 1.29,
+      year == 2011 ~ medianhouseholdincome * 1.17,
+      year == 2016 ~ medianhouseholdincome * 1.09,
+      year == 2021 ~ medianhouseholdincome, # Use the original value for year 2021
+      TRUE ~ NA_real_
+    )
+  )
+
+# Apply the cap to percentage variables, since they should be capped at 100
+panel_data_filtered$per_owners <- pmin(panel_data_filtered$per_owners, 100)
+panel_data_filtered$per_renters <- pmin(panel_data_filtered$per_renters, 100)
+panel_data_filtered$per_mvd1yr <- pmin(panel_data_filtered$per_mvd1yr, 100)
+panel_data_filtered$per_mvd5yr <- pmin(panel_data_filtered$per_mvd5yr, 100)
+panel_data_filtered$per_visminority <- pmin(panel_data_filtered$per_visminority, 100)
+panel_data_filtered$per_black <- pmin(panel_data_filtered$per_black, 100)
+panel_data_filtered$per_asian <- pmin(panel_data_filtered$per_asian, 100)
+panel_data_filtered$per_male <- pmin(panel_data_filtered$per_male, 100)
+panel_data_filtered$per_female <- pmin(panel_data_filtered$per_female, 100)
+panel_data_filtered$per_ages15_29 <- pmin(panel_data_filtered$per_ages15_29, 100)
+panel_data_filtered$per_singlefather <- pmin(panel_data_filtered$per_singlefather, 100)
+panel_data_filtered$per_singlemother <- pmin(panel_data_filtered$per_singlemother, 100)
+panel_data_filtered$per_singleparent <- pmin(panel_data_filtered$per_singleparent, 100)
+panel_data_filtered$per_bachplus <- pmin(panel_data_filtered$per_bachplus, 100)
+panel_data_filtered$per_unemployed <- pmin(panel_data_filtered$per_unemployed, 100)
+panel_data_filtered$per_immigrants <- pmin(panel_data_filtered$per_immigrants, 100)
+
+# Retrieve the column names of the data frame
+column_names <- names(panel_data_filtered)
+
+# Identify the indices of the 'year' and 'geometry' columns
+year_index <- which(column_names == "year")
+geometry_index <- which(column_names == "geometry")
+
+# Remove 'year' and 'geometry' columns from their current positions
+column_names <- column_names[-c(year_index, geometry_index)]
+
+# Insert 'year' at the second position
+column_names <- append(column_names, "year", after = 0)
+
+# Append 'geometry' at the end
+column_names <- append(column_names, "geometry")
+
+# Reorder the data frame using the new column order
+panel_data_filtered <- panel_data_filtered[, column_names]
+
 #Save to directory
-st_write(panel_data_filtered, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_6year.geojson")
+st_write(panel_data_filtered, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data.geojson")
+
 
 
 ```
+
+
