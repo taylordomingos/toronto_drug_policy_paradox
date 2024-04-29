@@ -1,0 +1,38 @@
+---
+title: "Merging Toronto Census Data with TPS Occurrences for Drugs, Sex Work, Gambling"
+format: html
+editor: visual
+---
+
+```{r}
+# Set working directory to cancensus folder in Dropbox
+setwd("/Users/taylordomingos/Documents/research_projects/second_year_paper/coding_files")
+
+#Load necessary packages
+library(pacman)
+p_load(cancensus, sf, geojsonsf, curl, httr, tidyverse, dplyr, Hmisc, zoo)
+
+#Read in SF panel data
+panel_data <- st_read("/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_annual.geojson")
+
+#Read in TPS occurrence data
+occurrence_data <- read.csv("/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/to_occurrence_counts.csv")
+```
+## Merge occurrence data
+
+```{r}
+# Rename the column in the data frame
+panel_data <- panel_data %>%
+    rename(tract_num = geouid_21) 
+
+# Ensure the column is character type
+occurrence_data$tract_num <- as.character(occurrence_data$tract_num)
+
+# Merge the occurrence dataset onto your panel census data by 'tract_num' and 'year'
+full_annual_data <- merge(panel_data, occurrence_data, by = c("tract_num", "year"), all.x = TRUE)
+
+#Write to working directory
+st_write(full_annual_data,"/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_annual.geojson")
+
+```
+
