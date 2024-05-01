@@ -1,914 +1,145 @@
 ---
-title: "TOcensusinterpolate"
+title: "Interpolation, Extrapolation, and Geometry Merging for Panel Data"
 format: html
 editor: visual
 ---
 
 ```{r setup}
 # Set working directory to cancensus folder in Dropbox
-setwd("~/Dropbox/Vice for Sale RA/cancensus")
+setwd("/Users/taylordomingos/Documents/research_projects/second_year_paper/coding_files")
 
 #Load necessary packages
 library(pacman)
 p_load(cancensus, sf, geojsonsf, curl, httr, tidyverse, dplyr, Hmisc, zoo)
 
 #Read in SF panel data
-to_census_panel_filtered_sf <- st_read("to_census_panel_filtered_sf.geojson")
-
-#Read in SF panel data
-to_census_panel_filtered <- read.csv("to_census_panel_filtered_df.csv")
-
+panel_data_6year <- st_read("/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data.geojson")
 ```
 
-## Linear Interpolation for 1992-2021
+## Interpolation, Extrapolation, and Geometry Merging for Panel Data
+
+The function for interpolation and extrapolation using smoothing splines fills in missing data for each numeric column in the dataset by estimating values based on the available data for each group (grouped by geouid_21 and year). Here is documentation for the splinefun which I use below: "Perform cubic (or Hermite) spline interpolation of given data points, returning either a list of points obtained by the interpolation or a function performing the interpolation." https://rdrr.io/r/stats/splinefun.html and https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/splinefun
+
+Cubic splines improve linear interpolation estimates in several cases because it essentially draws smoother curves over the estimates/data points. Cubic splines use a curve that smoothly connects data points, using a function that is a polynomial of degree three. The 'natural' part makes a smooth transition at the boundaries of your data, making the curve look natural at the ends.Linear interp basically estimates values between known data points by connecting them with sharp and straight lines, which may not represent the true trend. 'Natural' refers to the specific boundary condition used at the beginning and end of the data. refers to how the curvature (or bending) of the spline changes. By using the 'natural' curve it is setting the second derivative (concavity) to zero at the start and end points, the natural cubic spline avoids sharp bends or changes at the edges of the data.
+
+Any extrapolated values are capped at zero to prevent unrealistic negative values. Similarly, percentage variables are capped at 100 percent.
 
 ```{r}
-#First I need to check values where the population variable is weirdly off. I made a methodological note about this. 
+# Create a vector of all years you want in the expanded grid (1992-2020)
+all_years <- 1992:2021
 
-# Calculate the absolute difference between totpopplaceofbirth and population
-to_census_panel_filtered_sf$abs_diff <- abs(to_census_panel_filtered_sf$totpopplaceofbirth - to_census_panel_filtered_sf$population)
+# Convert 'geouid_21' to character class
+panel_data_6year$geouid_21 <- as.character(panel_data_6year$geouid_21)
 
-# Get the row numbers where the absolute difference is 400 or more
-mismatch_rows <- which(to_census_panel_filtered_sf$abs_diff >= 400)
+# Create a dataframe with all of the possible combinations of 'geouid_21' (tract number) and year
+template_df <- expand.grid(geouid_21 = unique(panel_data_6year$geouid_21), year = all_years)
 
-# Print the selected columns for the rows that meet the condition
-print(to_census_panel_filtered_sf[mismatch_rows, c("year", "tract_num", "totpopplaceofbirth", "pop")])
-
-# Before I begin linear interpolation, there are 12 observations where the ‘population’ variable is oddly low. These are cases where this variable does not match some of my other population variables like totpopsexandsge, totpopbycitizenship, and totpopbyplaceofbirth. Those population variables look more consistent in these cases (though in other cases they are frequently a little bit lower than the actual population counts). I am replacing these 10 rows below with the values from totpopbyplaceofbirth, so these weird numbers don’t ruin my interpolations.
-
-# Define the row numbers to be updated
-rows_to_update <- c(534, 542, 766, 1126, 1131, 1354, 1739, 1752, 1756, 1940, 2559)
-
-# Replace population values with totpopplaceofbirth values for the specified rows
-to_census_panel_filtered_sf$population[rows_to_update] <- to_census_panel_filtered_sf$totpopplaceofbirth[rows_to_update]
-
-#Before linear interpolation inspect to see what's weird so you can interpolate those too
-# Calculate percentage change in population
-to_census_panel_filtered_sf <- to_census_panel_filtered_sf %>%
-  group_by(tract_num) %>%
-  arrange(tract_num, year) %>%
-  mutate(percentage_change = (population - lag(population)) / lag(population) * 100)
-
-# Set a threshold for identifying drastic changes
-threshold <- 50  
-
-# Identify rows where the percentage change exceeds the threshold
-drastic_changes <- to_census_panel_filtered_sf %>% filter(abs(percentage_change) > threshold)
-
-# Count the number of unique tracts in the 'drastic_changes' data frame
-unique_tracts_count <- drastic_changes %>% 
-  summarise(unique_tracts_count = n_distinct(tract_num))
-
-library(dplyr)
-library(zoo)
-
-# List of tracts and years to set as NA and interpolate. With all interpolations up until this point I have interpolated about 4 percent of all observations. 
-# 5350005.00 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350005.00" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# 5350007.01 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350007.01" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# 5350007.02 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350007.02" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# 5350008.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350008.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350011.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350011.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350011.02 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350011.02" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350011.03 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350011.03" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350012.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350012.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350012.03 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350012.03" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350014.00 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350014.00" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350015.00 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350015.00" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# 5350016.00 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350016.00" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# 5350017.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350017.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350017.02 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350017.02" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# 5350018.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350018.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# 5350019.00 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350019.00" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# 5350020.00 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350020.00" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350021.00 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350021.00" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# 5350028.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350028.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350044.02 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350044.02" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# 5350047.03 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350047.03" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350050.03 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350050.03" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350050.04 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350050.04" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350062.03 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350062.03" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350070.00 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350070.00" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350102.04 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350102.04" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350102.05 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350102.05" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350112.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350112.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350128.05 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350128.05" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350132.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350132.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350135.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350135.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350141.02 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350141.02" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350153.00 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350153.00" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350154.00 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350154.00" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350165.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350165.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350184.01 2011 and 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350184.01" & (to_census_panel_filtered_sf$year == 2011 | to_census_panel_filtered_sf$year == 2016), 3:98] <- NA
-
-# Tract 5350192.00 1996 and 2021
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350192.00" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2021), 3:98] <- NA
-
-# Tract 5350250.04 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350250.04" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350200.01 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350200.01" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350205.00 1996 and 2021
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350205.00" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2021), 3:98] <- NA
-
-# Tract 5350210.01 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350210.01" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350210.03 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350210.03" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350210.04 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350210.04" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350215.00 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350215.00" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350220.00 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350220.00" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350226.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350226.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350228.00 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350228.00" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350230.02 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350230.02" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350233.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350233.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350236.02 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350236.02" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350249.04 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350249.04" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350261.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350261.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350262.02 2011 and 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350262.02" & (to_census_panel_filtered_sf$year == 2011 | to_census_panel_filtered_sf$year == 2016), 3:98] <- NA
-
-# Tract 5350270.01 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350270.01" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350271.02 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350271.02" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350272.01 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350272.01" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350290.02 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350290.02" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350296.00 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350296.00" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350299.01 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350299.01" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350300.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350300.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350300.02 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350300.02" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350305.01 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350305.01" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350305.05 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350305.05" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350305.06 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350305.06" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350307.03 1996 and 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350307.03" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2001), 3:98] <- NA
-
-# Tract 5350307.05 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350307.05" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350307.06 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350307.06" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350308.05 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350308.05" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350308.07 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350308.07" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350311.05 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350311.05" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350316.03 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350316.03" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350317.04 2001 and 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350317.04" & (to_census_panel_filtered_sf$year == 2001 | to_census_panel_filtered_sf$year == 2006), 3:98] <- NA
-
-# Tract 5350317.05 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350317.05" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350318.02 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350318.02" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350321.01 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350321.01" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350321.02 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350321.02" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350322.01 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350322.01" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350322.02 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350322.02" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350337.01 1996 and 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350337.01" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2006), 3:98] <- NA
-
-# Tract 5350337.02 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350337.02" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350338.00 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350338.00" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350341.04 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350341.04" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350345.00 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350345.00" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350347.00 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350347.00" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350353.04 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350353.04" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350362.01 2001 and 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350362.01" & (to_census_panel_filtered_sf$year == 2001 | to_census_panel_filtered_sf$year == 2011), 3:98] <- NA
-
-# Tract 5350363.05 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350363.05" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350363.06 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350363.06" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350368.01 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350368.01" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350376.06 2021
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350376.06" & to_census_panel_filtered_sf$year == 2021, 3:98] <- NA
-
-# Tract 5350376.12 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350376.12" & to_census_panel_filtered_sf$year == 2011, 3:98] <- NA
-
-# Tract 5350376.15 2006 and 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350376.15" & (to_census_panel_filtered_sf$year == 2006 | to_census_panel_filtered_sf$year == 2011), 3:98] <- NA
-
-# Tract 5350376.16 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350376.16" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350377.06 2006
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350377.06" & to_census_panel_filtered_sf$year == 2006, 3:98] <- NA
-
-# Tract 5350377.07 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350377.07" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350377.09 2016
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350377.09" & to_census_panel_filtered_sf$year == 2016, 3:98] <- NA
-
-# Tract 5350378.16 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.16" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350378.17 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.17" & to_census_panel_filtered_sf$year == 2001, 3:98] <- NA
-
-# Tract 5350378.18 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.18" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350378.20 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.20" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350378.25 1996 and 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.25" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2001), 3:98] <- NA
-
-# Tract 5350378.26 1996 and 2001
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.26" & (to_census_panel_filtered_sf$year == 1996 | to_census_panel_filtered_sf$year == 2001), 3:98] <- NA
-
-# Tract 5350378.27 1996
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.27" & to_census_panel_filtered_sf$year == 1996, 3:98] <- NA
-
-# Tract 5350378.28 2006 and 2011
-to_census_panel_filtered_sf[to_census_panel_filtered_sf$tract_num == "5350378.28" & (to_census_panel_filtered_sf$year == 2006 | to_census_panel_filtered_sf$year == 2011), 3:98] <- NA
-
-# Specify the columns for interpolation
-columns_to_interpolate <- 3:98
-
-# Function to perform linear interpolation within each group
-interpolate_group <- function(group_data) {
-  group_data[, columns_to_interpolate] <- zoo::na.approx(group_data[, columns_to_interpolate], na.rm = FALSE)
-  return(group_data)
-}
-
-# Apply the interpolation function within each tract_num group
-to_census_panel_filtered_sf <- to_census_panel_filtered_sf %>%
-  group_by(tract_num) %>%
-  do(interpolate_group(.))
-
-# Remove grouping
-to_census_panel_filtered_sf <- ungroup(to_census_panel_filtered_sf)
-
-# Function to perform linear interpolation and extrapolation within each group
-interpolate_group <- function(group_data) {
-  group_data[, columns_to_interpolate] <- zoo::na.approx(
-    group_data[, columns_to_interpolate],
-    na.rm = FALSE,
-    rule = 2  # Use rule = 2 for linear interpolation and extrapolation
-  )
-  return(group_data)
-}
-
-# Apply the interpolation function within each tract_num group
-to_census_panel_filtered_sf <- to_census_panel_filtered_sf %>%
-  group_by(tract_num) %>%
-  do(interpolate_group(.))
-
-# Note: The 'do' function is used to apply the custom function within each group
-
-# Remove grouping
-to_census_panel_filtered_sf <- ungroup(to_census_panel_filtered_sf)
-
-#Create an all years for the other years I want
-all_years<-c(1992:2021)
-
-#Make the tract_num character as opposed to numeric
-to_census_panel_filtered_sf$tract_num<-as.character(to_census_panel_filtered_sf$tract_num)
-is.character(to_census_panel_filtered_sf$tract_num)
-
-# Create a template dataframe with all possible combinations of tract_num and year
-template_df <- expand.grid(tract_num = unique(to_census_panel_filtered_sf$tract_num), year = all_years)
-
-# Merge the template dataframe with your original dataset
+# Merge the dataframe with original dataset
 merged_data <- template_df %>%
-  left_join(to_census_panel_filtered_sf, by = c("tract_num", "year")) %>%
-  arrange(tract_num, year)
-
-# Perform linear interpolation for each variable within each census tract
-# Shape Area
-interpolated_data <- merged_data %>%
-  group_by(tract_num) %>%
-  mutate(shapearea = na.approx(shapearea, na.rm = FALSE))
-
-# Households
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(households = na.approx(households, na.rm = FALSE))
-
-# Pop
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(pop = na.approx(pop, na.rm = FALSE))
-
-# Dwellings
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(dwellings = na.approx(dwellings, na.rm = FALSE))
-
-# Area Square KM
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(areasqkm = na.approx(areasqkm, na.rm = FALSE))
-
-# Population
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(population = na.approx(population, na.rm = FALSE))
-
-# Total Population by Sex and Age
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totpopsexage = na.approx(totpopsexage, na.rm = FALSE))
-
-# Male
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(male = na.approx(male, na.rm = FALSE))
-
-# Female
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(female = na.approx(female, na.rm = FALSE))
-
-# Land Area Sq Km
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(landareasqkm = na.approx(landareasqkm, na.rm = FALSE))
-
-# Total Census Families
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totcensusfamilies = na.approx(totcensusfamilies, na.rm = FALSE))
-
-# Lone Parent
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(loneparent = na.approx(loneparent, na.rm = FALSE))
-
-# Female Lone Parent
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(femaleloneparent = na.approx(femaleloneparent, na.rm = FALSE))
-
-# Male Lone Parent
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(maleloneparent = na.approx(maleloneparent, na.rm = FALSE))
-
-# Canadian Citizens
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(canadiancitizens = na.approx(canadiancitizens, na.rm = FALSE))
-
-# Total Population by Citizenship
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totpopbycitizenship = na.approx(totpopbycitizenship, na.rm = FALSE))
-
-# Non-Canadian Citizens
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(noncanadiancitizens = na.approx(noncanadiancitizens, na.rm = FALSE))
-
-# Total Population by Place of Birth
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totpopplaceofbirth = na.approx(totpopplaceofbirth, na.rm = FALSE))
-
-# Immigrants
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(immigrants = na.approx(immigrants, na.rm = FALSE))
-
-# Total Aboriginal Population
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totaboriginal = na.approx(totaboriginal, na.rm = FALSE))
-
-# Aboriginal
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(aboriginal = na.approx(aboriginal, na.rm = FALSE))
-
-# Occupied Dwellings
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(occupieddwellings = na.approx(occupieddwellings, na.rm = FALSE))
-
-# Rented
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(rented = na.approx(rented, na.rm = FALSE))
-
-# Owned
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(owned = na.approx(owned, na.rm = FALSE))
-
-# Total Visible Minority Groups
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totvisibleminoritygroups = na.approx(totvisibleminoritygroups, na.rm = FALSE))
-
-# Visible Minority
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(visibleminority = na.approx(visibleminority, na.rm = FALSE))
-
-# South Asian
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(southasian = na.approx(southasian, na.rm = FALSE))
-
-# Chinese
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(chinese = na.approx(chinese, na.rm = FALSE))
-
-# Black
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(black = na.approx(black, na.rm = FALSE))
-
-# Filipino
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(filipino = na.approx(filipino, na.rm = FALSE))
-
-# Arab
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(arab = na.approx(arab, na.rm = FALSE))
-
-# Latin American
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(latinamerican = na.approx(latinamerican, na.rm = FALSE))
-
-# Southeast Asian
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(southeastasian = na.approx(southeastasian, na.rm = FALSE))
-
-# West Asian
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(westasian = na.approx(westasian, na.rm = FALSE))
-
-# Korean
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(korean = na.approx(korean, na.rm = FALSE))
-
-# Japanese
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(japanese = na.approx(japanese, na.rm = FALSE))
-
-# Visible Minority NIE
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(visibleminoritynie = na.approx(visibleminoritynie, na.rm = FALSE))
-
-# Multiple Visible Minorities
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(multiplevisminority = na.approx(multiplevisminority, na.rm = FALSE))
-
-# Average Rent
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(averagerent = na.approx(averagerent, na.rm = FALSE))
-
-# Average Dwelling Value
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(averagedwellingvalue = na.approx(averagedwellingvalue, na.rm = FALSE))
-
-# Total Mobility Status 1 Year Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totmobilitystatus1yrago = na.approx(totmobilitystatus1yrago, na.rm = FALSE))
-
-# Non-movers 1 Year Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(nonmovers1yr = na.approx(nonmovers1yr, na.rm = FALSE))
-
-# Total Mobility Status 5 Years Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totmobilitystatus5yrago = na.approx(totmobilitystatus5yrago, na.rm = FALSE))
-
-# Movers 1 Year Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(movers1yr = na.approx(movers1yr, na.rm = FALSE))
-
-# Non-movers 5 Years Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(nonmovers5yr = na.approx(nonmovers5yr, na.rm = FALSE))
-
-# Movers 5 Years Ago
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(movers5yr = na.approx(movers5yr, na.rm = FALSE))
-
-# Age (male) 15 to 19
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_m_15_19 = na.approx(age_m_15_19, na.rm = FALSE))
-
-# Age (male) 20 to 24
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_m_20_24 = na.approx(age_m_20_24, na.rm = FALSE))
-
-# Age (female) 15 to 19
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_f_15_19 = na.approx(age_f_15_19, na.rm = FALSE))
-
-# Age (female) 20 to 24
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_f_20_24 = na.approx(age_f_20_24, na.rm = FALSE))
-
-# Age (male) 25 to 29
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_m_25_29 = na.approx(age_m_25_29, na.rm = FALSE))
-
-# Age (female) 25 to 29
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(age_f_25_29 = na.approx(age_f_25_29, na.rm = FALSE))
-
-# Total Population Highest Schooling
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totpophighestschooling = na.approx(totpophighestschooling, na.rm = FALSE))
-
-# Bachelors Degree
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(bachelorsdegree = na.approx(bachelorsdegree, na.rm = FALSE))
-
-# Highschool
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(highschool = na.approx(highschool, na.rm = FALSE))
-
-# No Degree
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(nodegree = na.approx(nodegree, na.rm = FALSE))
-
-# Total Unemployed
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totalunemployed = na.approx(totalunemployed, na.rm = FALSE))
-
-# Unemployed Male
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(unemployed_m = na.approx(unemployed_m, na.rm = FALSE))
-
-# Unemployed Female
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(unemployed_f = na.approx(unemployed_f, na.rm = FALSE))
-
-# Total Labour Force
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(totlabourforce = na.approx(totlabourforce, na.rm = FALSE))
-
-# Median Household Income
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(medianhouseholdincome = na.approx(medianhouseholdincome, na.rm = FALSE))
-
-# Median Income Individuals
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(medianincomeindividuals = na.approx(medianincomeindividuals, na.rm = FALSE))
-
-# Median Income Individual Male
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(medianincomeindividual_m = na.approx(medianincomeindividual_m, na.rm = FALSE))
-
-# Median Income Individual Female
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(medianincomeindividual_f = na.approx(medianincomeindividual_f, na.rm = FALSE))
-
-#Low income private household raw
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(lowincomeprivhouseholdraw = na.approx(lowincomeprivhouseholdraw, na.rm = FALSE))
-
-#Asian combined
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(asian_combined = na.approx(asian_combined, na.rm = FALSE))
-
-#Asian combined
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(asian_combined = na.approx(asian_combined, na.rm = FALSE))
-
-#Asian combined
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(asian_combined = na.approx(asian_combined, na.rm = FALSE))
-
-per_variables <- c(
-  "lowincomeprivhouseholdpercent", "per_owners", "per_renters",
-  "per_mvd1yr", "per_mvd5yr", "averagerent21dol",
-  "averagedwellingvalue21dol", "per_visminority", "per_black", "per_asian", "per_male",
-  "per_female", "per_ages15_29", "per_singlefather",
-  "per_singlemother", "per_singleparent", "per_bachplus",
-  "per_unemployed", "per_immigrants", "medianhouseholdincome_21dol",
-  "per_govttransfer", "per_indigenous", "per_immigrant",
-  "per_white", "per_nodegree"
-)
-
-# Loop through each per_ variable
-for (variable in per_variables) {
-  interpolated_data <- interpolated_data %>%
-    group_by(tract_num) %>%
-    mutate(!!variable := na.approx(!!sym(variable), na.rm = FALSE))
-}
-
-
-```
-
-## Fill in Missing Geometry Coordinates
-
-```{r}
-# Filter the data for the year 1996
-year_1996_data <- interpolated_data %>%
-  filter(year == 1996)
-
-# Identify the unique character tracts
-unique_tracts <- unique(interpolated_data$tract_num)
-
-# Iterate through each unique tract
-for (tract_num in unique_tracts) {
-  # Check if the geometry is "MULTIPOLYGON EMPTY"
-  if (any(sapply(interpolated_data$geometry[interpolated_data$tract_num == tract_num], function(x) st_is_empty(x)))) {
-    # Get the geometry from the year 1996
-    tract_geometry <- year_1996_data$geometry[year_1996_data$tract_num == tract_num]
+  left_join(panel_data_6year, by = c("geouid_21", "year")) %>%
+  arrange(geouid_21, year)
+
+# This is a function to interpolate and extrapolate using smoothing splines
+interpolate_and_extrapolate <- function(group_data) {
+    # Define the range of years for which we want to perform the interpolation and extrapolation
+    years_range <- seq(1992, 2020)
     
-    # Update the geometry for the specified years
-    years_to_update <- c(1992, 1993, 1994, 1995, 1997, 1998, 1999, 2000, 2002, 2003, 2004, 2005, 2007, 2008, 2009, 2010, 2012, 2013, 2014, 2015, 2017, 2018, 2019, 2020)
-    interpolated_data$geometry[interpolated_data$tract_num == tract_num & interpolated_data$year %in% years_to_update] <- tract_geometry
-  }
+    # Apply smoothing splines for each column you want to interpolate and extrapolate
+    group_data <- group_data %>%
+        mutate(across(where(is.numeric), ~ {
+            # Remove NAs and keep track of original data
+            non_na_data <- na.omit(data.frame(year = group_data$year, value = .x))
+            
+            # If there are at least two data points (non-NA) available, it applies smoothing splines using splinefun with a natural cubic spline method. This creates a function (spline_func) that can estimate values for the given range of years.
+            if (nrow(non_na_data) >= 2) {
+                spline_func <- splinefun(non_na_data$year, non_na_data$value, method = "natural")
+                spline_values <- spline_func(years_range)
+                
+                # Cap the extrapolated values at zero
+                spline_values <- pmax(spline_values, 0)
+                
+                # Return estimated values in dataset with the result of the spline interpolation/extrapolation function
+                result <- sapply(group_data$year, function(year) {
+                    if (year %in% years_range) {
+                        return(spline_values[which(years_range == year)])
+                    }
+                    return(.x) # Return original value otherwise
+                })
+                
+                return(result)
+            } else {
+                # Uses the spline function to replace the data in the dataset. If the year is within the range, it uses the estimated value; otherwise, it keeps the original value.
+                return(.x)
+            }
+        }))
+    
+    return(group_data)
 }
 
-```
+# Group the data by `geouid_21` and apply the function above
+result_data <- merged_data %>%
+    group_by(geouid_21) %>%
+    group_modify(~ interpolate_and_extrapolate(.))
 
-## Linear Extrapolation for Years at the Start (1992-1995)
+# Ungroup the data frame
+result_data <- result_data %>%
+    ungroup()
 
-```{r}
-# Define a function for linear extrapolation
-extrapolate_variable <- function(variable) {
-  available_years <- interpolated_data$year[!is.na(variable)]
-  if (length(available_years) < 2) {
-    return(variable)
-  }
-  extrapolated_values <- Hmisc::approxExtrap(
-    available_years,
-    variable[!is.na(variable)],
-    xout = 1992:1995,
-    rule = 2
-  )$y
-  
-  variable[is.na(variable)] <- extrapolated_values
-  return(variable)
-}
+# Convert all of my columns to numeric
+result_data <- result_data %>%
+  mutate(across(everything(), ~ as.numeric(as.character(.))))
 
-# Apply linear extrapolation for specific columns within each tract
-columns_to_extrapolate <- 3:97  
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(across(all_of(columns_to_extrapolate), ~extrapolate_variable(.)))
+# Round all numeric columns to two decimal places
+result_data <- result_data %>%
+    mutate(across(where(is.numeric), round, 2))
 
-# Define the columns to replace
-columns_to_replace <- 3:97
+# Filter panel_data_6year for the year 1996
+geometry_1996 <- panel_data_6year %>%
+    filter(year == 1996) %>%
+    select(geouid_21, geometry)
 
-# Loop through the specified columns
-for (col in columns_to_replace) {
-  # Identify negative values in the column and set them to NA
-  interpolated_data[[col]][interpolated_data[[col]] < 0] <- NA
-  
-  # Replace NA values with 1996 values for the same tract and variable
-  interpolated_data[[col]] <- ave(interpolated_data[[col]], interpolated_data$tract_num, FUN = function(x) {
-    ifelse(is.na(x), x[interpolated_data$year == 1996][1], x)
-  })
-}
+# Merge the geometry from 1996 into result_data
+# Convert geouid_21 in geometry_1996 to match the type in result_data
+geometry_1996$geouid_21 <- as.numeric(geometry_1996$geouid_21)
 
-# Replace NAs in the "type" column with "CT"
-interpolated_data$type <- "CT"
+result_data <- result_data %>%
+    left_join(geometry_1996, by = "geouid_21")
 
-# Replace NAs in the "cmauid" column with 35535
-interpolated_data$cmauid <- 35535
+# Replace the geometry column in result_data with the geometry from 1996
+result_data$geometry <- coalesce(result_data$geometry, result_data$geometry.y)
 
-# Replace NAs in the "cmauid" column with 35535
-interpolated_data$cd_uid <- 3520
+# Drop the extra geometry_1996 column since I have already merged the values
+result_data <- result_data %>%
+    select(c(-geometry.x,-geometry.y))
 
-#Remove columns
-interpolated_data <- subset(interpolated_data, select = -c(geouid, csd_uid, abs_diff, per_immigrant, pop, type))
+# Convert result_data back to an sf object
+result_data_sf <- st_as_sf(result_data, crs = st_crs(panel_data_6year))
 
-# Define a function for linear extrapolation
-extrapolate_variable <- function(variable) {
-  available_years <- interpolated_data$year[!is.na(variable)]
-  if (length(available_years) < 2) {
-    return(variable)
-  }
-  extrapolated_values <- Hmisc::approxExtrap(
-    available_years,
-    variable[!is.na(variable)],
-    xout = 1992:1995,
-    rule = 2
-  )$y
-  
-  variable[is.na(variable)] <- extrapolated_values
-  return(variable)
-}
+# Verify that it is sf object
+class(result_data_sf)
 
-# List of percent variables to replace
-percent_variables_to_replace <- c(
-  "lowincomeprivhouseholdpercent", "per_owners", "per_renters",
-  "per_mvd1yr", "per_mvd5yr", "per_visminority", "per_black", "per_asian", "per_male",
-  "per_female", "per_ages15_29", "per_singlefather",
-  "per_singlemother", "per_singleparent", "per_bachplus",
-  "per_unemployed", "per_immigrants", "per_govttransfer", "per_indigenous",  "per_white", "per_nodegree"
-)
+# Drop rows with missing values from result_data_sf
+result_data_sf <- result_data_sf %>%
+    drop_na()
 
-# Apply linear extrapolation for percent variables within each tract
-interpolated_data <- interpolated_data %>%
-  group_by(tract_num) %>%
-  mutate(across(all_of(percent_variables_to_replace), ~extrapolate_variable(.)))
+# Apply the cap to percentage variables, since they should be capped at 100
+result_data_sf$per_owners <- pmin(result_data_sf$per_owners, 100)
+result_data_sf$per_renters <- pmin(result_data_sf$per_renters, 100)
+result_data_sf$per_mvd1yr <- pmin(result_data_sf$per_mvd1yr, 100)
+result_data_sf$per_mvd5yr <- pmin(result_data_sf$per_mvd5yr, 100)
+result_data_sf$per_visminority <- pmin(result_data_sf$per_visminority, 100)
+result_data_sf$per_black <- pmin(result_data_sf$per_black, 100)
+result_data_sf$per_asian <- pmin(result_data_sf$per_asian, 100)
+result_data_sf$per_male <- pmin(result_data_sf$per_male, 100)
+result_data_sf$per_female <- pmin(result_data_sf$per_female, 100)
+result_data_sf$per_ages15_29 <- pmin(result_data_sf$per_ages15_29, 100)
+result_data_sf$per_singlefather <- pmin(result_data_sf$per_singlefather, 100)
+result_data_sf$per_singlemother <- pmin(result_data_sf$per_singlemother, 100)
+result_data_sf$per_singleparent <- pmin(result_data_sf$per_singleparent, 100)
+result_data_sf$per_bachplus <- pmin(result_data_sf$per_bachplus, 100)
+result_data_sf$per_unemployed <- pmin(result_data_sf$per_unemployed, 100)
+result_data_sf$per_immigrants <- pmin(result_data_sf$per_immigrants, 100)
 
-# Loop through percent variables and apply the cap
-for (variable in percent_variables_to_replace) {
-  interpolated_data[[variable]] <- pmin(100, pmax(0, interpolated_data[[variable]]))
-}
-
-
-#Save geojson file and csv to working directory
-st_write(interpolated_data, "to_census_panel_annual_sf.geojson")
-st_drop_geometry(interpolated_data)
-interpolated_data<-as.data.frame(interpolated_data)
-write_csv(interpolated_data,"to_census_panel_annual_df.csv")
-
-
-
+#Save to directory
+st_write(result_data_sf, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_annual.geojson")
 ```
