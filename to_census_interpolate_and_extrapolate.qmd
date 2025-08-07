@@ -5,12 +5,12 @@ editor: visual
 ---
 
 ```{r setup}
-# Set working directory to cancensus folder in Dropbox
+# Set working directory 
 setwd("/Users/taylordomingos/Documents/research_projects/second_year_paper/coding_files")
 
 #Load necessary packages
 library(pacman)
-p_load(cancensus, sf, geojsonsf, curl, httr, tidyverse, dplyr, Hmisc, zoo)
+pload(cancensus, sf, geojsonsf, curl, httr, tidyverse, dplyr, Hmisc, zoo)
 
 #Read in SF panel data
 panel_data_6year <- st_read("/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data.geojson")
@@ -18,9 +18,9 @@ panel_data_6year <- st_read("/Users/taylordomingos/Documents/research_projects/s
 
 ## Interpolation, Extrapolation, and Geometry Merging for Panel Data
 
-The function for interpolation and extrapolation using smoothing splines fills in missing data for each numeric column in the dataset by estimating values based on the available data for each group (grouped by geouid_21 and year). Here is documentation for the splinefun which I use below: "Perform cubic (or Hermite) spline interpolation of given data points, returning either a list of points obtained by the interpolation or a function performing the interpolation." https://rdrr.io/r/stats/splinefun.html and https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/splinefun
+The function for interpolation and extrapolation using smoothing splines fills in missing data for each numeric column in the dataset by estimating values based on the available data for each group (grouped by tract_num and year). Here is documentation for the splinefun which I use below: "Perform cubic (or Hermite) spline interpolation of given data points, returning either a list of points obtained by the interpolation or a function performing the interpolation." https://rdrr.io/r/stats/splinefun.html and https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/splinefun
 
-Cubic splines improve linear interpolation estimates in several cases because it essentially draws smoother curves over the estimates/data points. Cubic splines use a curve that smoothly connects data points, using a function that is a polynomial of degree three. The 'natural' part makes a smooth transition at the boundaries of your data, making the curve look natural at the ends.Linear interp basically estimates values between known data points by connecting them with sharp and straight lines, which may not represent the true trend. 'Natural' refers to the specific boundary condition used at the beginning and end of the data. refers to how the curvature (or bending) of the spline changes. By using the 'natural' curve it is setting the second derivative (concavity) to zero at the start and end points, the natural cubic spline avoids sharp bends or changes at the edges of the data.
+Cubic splines improve linear interpolation estimates in several cases because it essentially draws smoother curves over the estimates/data points. Cubic splines use a curve that smoothly connects data points, using a function that is a polynomial of degree three. The 'natural' part makes a smooth transition at the boundaries of your data, making the curve look natural at the ends.Linear interp basically estimates values between known data points by connecting them with sharp and straight lines, which may not represent the true trend. 'Natural' refers to the specific boundary condition used at the beginning and end of the data. By using the 'natural' curve it is setting the second derivative (concavity) to zero at the start and end points, the natural cubic spline avoids sharp bends or changes at the edges of the data.
 
 Any extrapolated values are capped at zero to prevent unrealistic negative values. Similarly, percentage variables are capped at 100 percent.
 
@@ -35,6 +35,12 @@ panel_data_6year$geouid_21 <- as.character(panel_data_6year$geouid_21)
 template_df <- expand.grid(geouid_21 = unique(panel_data_6year$geouid_21), year = all_years)
 
 # Merge the dataframe with original dataset
+template_df <- template_df %>%
+  mutate(year = as.character(year))
+
+panel_data_6year <- panel_data_6year %>%
+  mutate(year = as.character(year))
+
 merged_data <- template_df %>%
   left_join(panel_data_6year, by = c("geouid_21", "year")) %>%
   arrange(geouid_21, year)
@@ -96,7 +102,7 @@ result_data <- result_data %>%
 # Filter panel_data_6year for the year 1996
 geometry_1996 <- panel_data_6year %>%
     filter(year == 1996) %>%
-    select(geouid_21, geometry)
+    dplyr::select(geouid_21, geometry)
 
 # Merge the geometry from 1996 into result_data
 # Convert geouid_21 in geometry_1996 to match the type in result_data
@@ -110,7 +116,7 @@ result_data$geometry <- coalesce(result_data$geometry, result_data$geometry.y)
 
 # Drop the extra geometry_1996 column since I have already merged the values
 result_data <- result_data %>%
-    select(c(-geometry.x,-geometry.y))
+    dplyr::select(c(-geometry.x,-geometry.y))
 
 # Convert result_data back to an sf object
 result_data_sf <- st_as_sf(result_data, crs = st_crs(panel_data_6year))
@@ -139,7 +145,10 @@ result_data_sf$per_singleparent <- pmin(result_data_sf$per_singleparent, 100)
 result_data_sf$per_bachplus <- pmin(result_data_sf$per_bachplus, 100)
 result_data_sf$per_unemployed <- pmin(result_data_sf$per_unemployed, 100)
 result_data_sf$per_immigrants <- pmin(result_data_sf$per_immigrants, 100)
+result_data_sf$per_racialized_pop <- pmin(result_data_sf$per_racialized_pop, 100)
+result_data_sf$per_indigenous <- pmin(result_data_sf$per_indigenous, 100)
 
 #Save to directory
 st_write(result_data_sf, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data_annual.geojson")
+
 ```
