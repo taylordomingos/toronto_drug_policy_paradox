@@ -17,7 +17,7 @@ Information on crosswalking was obtained from this Allen and Taylor (2018) piece
 The crosswalk downloadable files (that include weights and the different tract numbers/combinations) are available on their github here: https://github.com/jamaps/CLTD/tree/master/crosswalk_tables. You need to download the raw file into a CSV.
 
 ```{r setup}
-# Set working directory to cancensus folder in Dropbox
+# Set working directory 
 setwd("/Users/taylordomingos/Documents/research_projects/second_year_paper/coding_files")
 
 #Load necessary packages
@@ -1175,7 +1175,7 @@ st_geometry(to_census_split_01) <- NULL
 names(to_census_split_01)
 summary(to_census_split_01)
 
-# Create a vector of variable names to which you want to apply the weight
+# Create a vector of variable names to which you DON'T want to apply the weight
 variables_to_exclude <- c(
   "geouid_01", "type_01", "cmauid_01", "key_01", "csd_uid_01", "cd_uid_01", "pr_uid_01",
   "region_name_01", "averagedwellingvalue_01", "medianfamilyincome_01", 
@@ -1233,7 +1233,7 @@ st_geometry(to_census_split_06) <- NULL
 names(to_census_split_06)
 summary(to_census_split_06)
 
-# Create a vector of variable names to which you want to apply the weight
+# Create a vector of variable names to which you DON'T want to apply the weight
 variables_to_exclude <- c(
   "geouid_06", "type_06", "flags_06", "cmauid_06", "csd_uid_06", "cd_uid_06", "pr_uid_06",
   "region_name_06", "averagedwellingvalue_06", "medianfamilyincome_06", 
@@ -1459,7 +1459,7 @@ data_frames96 <- list(to_census_nochange1, to_census_split1, to_census_m2m1)
 common_columns <- Reduce(intersect, map(data_frames96, names))
 
 # Subset each data frame to keep only the common columns, which are the only ones I will need anyways
-data_frames96 <- map(data_frames96, function(df) df %>% select(all_of(common_columns)))
+data_frames96 <- map(data_frames96, function(df) df %>% dplyr::select(all_of(common_columns)))
 
 # Stack the data frames
 to_census1 <- bind_rows(data_frames96)
@@ -1545,7 +1545,7 @@ data_frames01 <- list(to_census_nochange2, to_census_split2, to_census_m2m2)
 common_columns <- Reduce(intersect, map(data_frames01, names))
 
 # Subset each data frame to keep only the common columns, which are the only ones I will need anyways
-data_frames01 <- map(data_frames01, function(df) df %>% select(all_of(common_columns)))
+data_frames01 <- map(data_frames01, function(df) df %>% dplyr::select(all_of(common_columns)))
 
 # Stack the data frames
 to_census2 <- bind_rows(data_frames01)
@@ -1632,7 +1632,7 @@ data_frames06 <- list(to_census_nochange3, to_census_split3, to_census_m2m3)
 common_columns <- Reduce(intersect, map(data_frames06, names))
 
 # Subset each data frame to keep only the common columns, which are the only ones I will need anyways
-data_frames06 <- map(data_frames06, function(df) df %>% select(all_of(common_columns)))
+data_frames06 <- map(data_frames06, function(df) df %>% dplyr::select(all_of(common_columns)))
 
 # Stack the data frames
 to_census3 <- bind_rows(data_frames06)
@@ -1717,7 +1717,7 @@ data_frames11 <- list(to_census_nochange4, to_census_split4, to_census_m2m4)
 common_columns <- Reduce(intersect, map(data_frames11, names))
 
 # Subset each data frame to keep only the common columns, which are the only ones I will need anyways
-data_frames11 <- map(data_frames11, function(df) df %>% select(all_of(common_columns)))
+data_frames11 <- map(data_frames11, function(df) df %>% dplyr::select(all_of(common_columns)))
 
 # Stack the data frames
 to_census4 <- bind_rows(data_frames11)
@@ -1798,7 +1798,7 @@ data_frames16 <- list(to_census_nochange5, to_census_split5, to_census_m2m5)
 common_columns <- Reduce(intersect, map(data_frames16, names))
 
 # Subset each data frame to keep only the common columns, which are the only ones I will need anyways
-data_frames16 <- map(data_frames16, function(df) df %>% select(all_of(common_columns)))
+data_frames16 <- map(data_frames16, function(df) df %>% dplyr::select(all_of(common_columns)))
 
 # Stack the data frames
 to_census5 <- bind_rows(data_frames16)
@@ -1815,7 +1815,7 @@ remove_columns_21 <- function(df) {
     purrr::keep(~ grepl("_21$", .x) & .x != "geouid_21")
   
   # Remove the identified columns
-  df <- df %>% select(-all_of(columns_to_remove))
+  df <- df %>% dplyr::select(-all_of(columns_to_remove))
   
   return(df)
 }
@@ -2020,14 +2020,14 @@ rm(list = setdiff(all_objects, "panel_data"))
 
 ## Check Missing
 
-Inspect all the missing and how many columns are missing in each. After running the command below there are about 21 tracts of the 3492 with at least one missing value (about 0.6%). I dropped three tracts here with missings across the years.
+Inspect all the missing and how many columns are missing in each. After running the command below there are about 21 tracts of the 3492 with at least one missing value (about 0.6%). I dropped six tracts here with missings across the years.
 
 ```{r}
 # Drop the column 'lowincomeprivhouseholdsraw' from panel_data since there are so many missings
 panel_data <- subset(panel_data, select = -lowincomeprivhouseholdsraw)
 
 # Drop specified tracts I know are missing
-tracts_to_drop <- c("5350006.00", "5350003.00", "5350009.00")
+tracts_to_drop <- c("5350006.00", "5350003.00", "5350009.00", "5350205.00", "5350376.06", "5350296.00")
 
 # Remove rows with geouid_21 values in tracts_to_drop
 panel_data_filtered <- subset(panel_data, !(geouid_21 %in% tracts_to_drop))
@@ -2062,11 +2062,28 @@ df_missing <- do.call(rbind, results)
 
 ## Deal with Missing
 
-For the few missing here I am using spatial interpolation, Inverse Distance Weighting. The technique is based on the assumption that tracts closer to the unmeasured location have a greater influence on the estimated value than points farther away.For each variable, I identify rows with missing values (NA) using the is.na() function. The rows without missing values are filtered out and used as input data. The IDW interpolation is performed using the measured data (data_year_filtered) and the parameters nmax and idp. Nmax = 5 uses 5 nearest census tracts. By limiting the number of neighbors to 5, I am focusing the interpolation on a small set of the closest points to the location being estimated.
+For a few missing here I am using spatial interpolation, Inverse Distance Weighting. The technique is based on the assumption that tracts closer to the unmeasured location have a greater influence on the estimated value than points farther away.For each variable, I identify rows with missing values (NA) using the is.na() function. The rows without missing values are filtered out and used as input data. The IDW interpolation is performed using the measured data (data_year_filtered) and the parameters nmax and idp. Nmax = 5 uses 5 nearest census tracts. By limiting the number of neighbors to 5, I am focusing the interpolation on a small set of the closest points to the location being estimated.
 
 ```{r}
 library(gstat)
 library(sp)
+
+#Before interpolating I want to set 5350016.00 as NA for 1996, because it is showing up with some NaN
+row_to_replace <- 536
+
+# Define the columns range you want to replace (adjust as per your actual column indices)
+columns_to_replace <- 17:66
+
+# Convert sf object to data frame
+values_to_replace <- c(0, NaN)  
+
+# Replace values with NA in selected columns
+panel_data_filtered <- panel_data_filtered %>%
+  mutate(across(
+    all_of(columns_to_replace),
+    ~ ifelse(. %in% values_to_replace, NA_real_, .)
+  ))
+
 
 # Parameters for IDW interpolation
 nmax <- 5  # Number of nearest neighbors to consider
@@ -2108,6 +2125,7 @@ for (year in unique(panel_data_filtered$year)) {
 }
 
 ```
+
 ## Variable Transformations, Creating Percentage Variables, and Reordering Columns
 
 ```{r}
@@ -2155,11 +2173,20 @@ panel_data_filtered$per_singleparent <- panel_data_filtered$loneparent / panel_d
 # % population with bachelors or higher
 panel_data_filtered$per_bachplus <- panel_data_filtered$bachelorsdegree / panel_data_filtered$totpophighestschooling * 100
 
+# % no hs degree
+panel_data_filtered$per_nodegree <- panel_data_filtered$nodegree / panel_data_filtered$totpophighestschooling * 100
+
 # % unemployed
 panel_data_filtered$per_unemployed <- panel_data_filtered$totalunemployed / panel_data_filtered$totlabourforce * 100
 
 # % immigrants
 panel_data_filtered$per_immigrants <- panel_data_filtered$immigrants / panel_data_filtered$totpopplaceofbirth * 100
+
+# % indigenous
+panel_data_filtered$per_indigenous <- panel_data_filtered$aboriginal / panel_data_filtered$totaboriginal * 100
+
+# % racialized population
+panel_data_filtered$per_racialized_pop <- panel_data_filtered$per_visminority + panel_data_filtered$per_indigenous
 
 # median household income and average rent in 2021 dollars (based on Bank of Canada inflation calculator to 01/2021 dollars)
 # Apply conversions based on the year
@@ -2211,6 +2238,9 @@ panel_data_filtered$per_singleparent <- pmin(panel_data_filtered$per_singleparen
 panel_data_filtered$per_bachplus <- pmin(panel_data_filtered$per_bachplus, 100)
 panel_data_filtered$per_unemployed <- pmin(panel_data_filtered$per_unemployed, 100)
 panel_data_filtered$per_immigrants <- pmin(panel_data_filtered$per_immigrants, 100)
+panel_data_filtered$per_nodegree <- pmin(panel_data_filtered$per_nodegree, 100)
+panel_data_filtered$per_racialized_pop <- pmin(panel_data_filtered$per_racialized_pop, 100)
+panel_data_filtered$per_indigenous <- pmin(panel_data_filtered$per_indigenous, 100)
 
 # Retrieve the column names of the data frame
 column_names <- names(panel_data_filtered)
@@ -2234,8 +2264,4 @@ panel_data_filtered <- panel_data_filtered[, column_names]
 #Save to directory
 st_write(panel_data_filtered, "/Users/taylordomingos/Documents/research_projects/second_year_paper/raw_data/panel_data.geojson")
 
-
-
 ```
-
-
